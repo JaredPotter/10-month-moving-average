@@ -1,0 +1,21 @@
+{
+  "name": "10-month-moving-average",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "deploy": "npm run build --prefix  web-app && firebase deploy",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JaredPotter/10-month-moving-average.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/JaredPotter/10-month-moving-average/issues"
+  },
+  "homepage": "https://github.com/JaredPotter/10-month-moving-average#readme"
+}

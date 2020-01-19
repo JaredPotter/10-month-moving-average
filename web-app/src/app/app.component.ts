@@ -31,8 +31,8 @@ export class AppComponent {
   }
 
   handleAddSymbolSubmit() {
-    // const url = 'https://us-central1-month-mov-avg-notifier.cloudfunctions.net/addSymbol';
-    const url = 'http://localhost:5001/month-mov-avg-notifier/us-central1/addSymbol';
+    const url = 'https://us-central1-month-mov-avg-notifier.cloudfunctions.net/addSymbol';
+    // const url = 'http://localhost:5001/month-mov-avg-notifier/us-central1/addSymbol';
     const symbol = this.newSymbolForm.value.symbol;
 
     if(!symbol) {
@@ -100,8 +100,6 @@ export class AppComponent {
 
           return 0;
         });
-
-        debugger;
 
         this.username = data.username;
       })
