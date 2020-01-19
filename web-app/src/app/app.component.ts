@@ -13,11 +13,13 @@ export class AppComponent {
   userForm = new FormGroup({
     username: new FormControl('jared')
   });
+  newSymbolForm = new FormGroup({
+    symbol: new FormControl('')
+  });
 
   username = null;
   symbols = [];
   symbolItemList = [];
-  lastUpdated = null;
 
   handleSubmit() {
     const username = this.userForm.value.username;
@@ -29,6 +31,30 @@ export class AppComponent {
     this.getUserData(username);
   }
 
+  handleAddSymbolSubmit() {
+    const url = 'https://us-central1-month-mov-avg-notifier.cloudfunctions.net/addSymbol';
+    const symbol = this.newSymbolForm.value.symbol;
+
+    if(!symbol) {
+      alert('No symbol added');
+      return;
+    }
+
+    debugger;
+
+    axios.post(url, {
+      username: this.username,
+      symbol: symbol
+    })
+      .then((response) => {
+        this.getUserData(this.username);
+        debugger;
+      })
+      .catch((error) => {
+        debugger;
+      });
+  }
+
   getUserData(username) {
     const url = 'https://us-central1-month-mov-avg-notifier.cloudfunctions.net/userData';
 
@@ -37,25 +63,33 @@ export class AppComponent {
     })
       .then((response) => {
         const data = response.data;
-        this.lastUpdated = data.datetime;
         this.symbols = Object.keys(data.symbols);
 
         this.symbolItemList = this.symbols.map((sym) => {
-          return {
-            symbol: sym,
-            // currentPrice: data.symbols[sym].currentPrice,
-            // margin: data.symbols[sym].margin,
-            // average: data.symbols[sym].average,
+          const s = data.symbols[sym];
 
-            ...data.symbols[sym],
-            action: this.determineAction(data.symbols[sym].currentPrice, data.symbols[sym].average),
-            prices: data.symbols[sym].prices.map((price) => {
-              // debugger;
-              return {
-                price: price.price,
-                datetime: moment(price.datetime).format('MMM DD YYYY'),
-              };
-            })
+          if(s) {
+            return {
+              symbol: sym,
+              // currentPrice: s.currentPrice,
+              // margin: s.margin,
+              // average: s.average,
+
+              ...s,
+              action: this.determineAction(s.currentPrice, s.average),
+              prices: s.prices.map((price) => {
+                // debugger;
+                return {
+                  price: price.price,
+                  datetime: moment(price.datetime).format('MMM DD YYYY'),
+                };
+              })
+            }
+
+
+          }
+          else {
+            debugger;
           }
         });
 

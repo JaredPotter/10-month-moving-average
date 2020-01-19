@@ -10,6 +10,13 @@
   <div class="results" *ngIf="this.symbolItemList.length > 0">
     <div>Welcome, {{ this.username }}</div>
     <button (click)="handleLogout()">Logout</button>
+    <form [formGroup]="newSymbolForm" (ngSubmit)="handleAddSymbolSubmit()">
+      <label>
+        Symbol:
+        <input type="text" required formControlName="symbol"/>
+      </label>
+      <button>Add Symbol</button>
+    </form>
     <table>
       <tr>
         <th>Symbol</th>

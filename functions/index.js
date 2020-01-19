@@ -161,43 +161,47 @@ async function updateAllUsers() {
     });
 }
 
+async function updateUser(username) {
+    const usersSnapshot = await firestore.collection('users').where('username', '==', username).get();
+    usersSnapshot.forEach((doc) => {
+        const data = doc.data();
+
+        console.log(`Updating Symbols for ${data.username}`);
+
+        const symbols = data.symbols;
+
+        console.log(`Object.keys(symbols): ${Object.keys(symbols)}`);
+
+        Object.keys(symbols).forEach(async (sym) => {
+            console.log(`Updating Symbol - ${sym}`);
+            const response = await fetchData(sym);
+
+            const payload = {
+                symbols: {
+                    [sym]: response
+                }
+            };
+
+            firestore.collection('users').doc(doc.id).set(payload, { merge: true })
+                .then((response) => {
+                    console.log(`Successfully Updated ${sym} for ${data.username}`);
+                    
+                })
+                .catch((error) => {
+                    console.log(`Failed To Update ${sym} for ${data.username}`);
+                }); 
+        });
+    });
+}
+
 exports.calculateForUser = functions.https.onRequest(async (request, response) => {
     cors(request, response, async () => {
         const username = request.body.username;
 
         if(username) {
-            const usersSnapshot = await firestore.collection('users').where('username', '==', username).get();
-            usersSnapshot.forEach((doc) => {
-                const data = doc.data();
-    
-                console.log(`Updating Symbols for ${data.username}`);
-        
-                const symbols = data.symbols;
-        
-                console.log(`Object.keys(symbols): ${Object.keys(symbols)}`);
-        
-                Object.keys(symbols).forEach(async (sym) => {
-                    console.log(`Updating Symbol - ${sym}`);
-                    const response = await fetchData(sym);
-        
-                    const payload = {
-                        symbols: {
-                            [sym]: response
-                        }
-                    };
-        
-                    firestore.collection('users').doc(doc.id).set(payload, { merge: true })
-                        .then((response) => {
-                            console.log(`Successfully Updated ${sym} for ${data.username}`);
-                            
-                        })
-                        .catch((error) => {
-                            console.log(`Failed To Update ${sym} for ${data.username}`);
-                        }); 
-                });
-    
-                response.send('complete');
-            });
+            await updateUser(username);
+
+            response.send('complete');
         }
         else {
             response.send('username field is missing from body');
@@ -221,6 +225,7 @@ exports.tenMonthMovingAverage = functions.runWith(runtimeOpts).pubsub.schedule('
 // NORMAL DATA ENDPOINTS
 exports.userData = functions.https.onRequest(async (request, response) => {
     cors(request, response, async () => {
+
         const username = request.body.username;
 
         if(!username) {
@@ -236,5 +241,45 @@ exports.userData = functions.https.onRequest(async (request, response) => {
     
             return;
         });
+    });
+});
+
+exports.addSymbol = functions.https.onRequest(async (request, response) => {
+    cors(request, response, async () => {
+        const username = request.body.username;
+        const symbol = request.body.symbol;
+
+        if(!username || !symbol) {
+            response.send('Missing username or symbol!');
+            return;
+        }
+
+        const usersSnapshot = await firestore.collection('users').where('username', '==', username).get();
+
+        usersSnapshot.forEach(async (doc) => {
+            const data = doc.data();
+            const docRef = await firestore.collection('users').doc(doc.id);
+
+            if(data.username === username) {
+                const newSymbols = {...data.symbols};
+                newSymbols[symbol] = null;
+
+                docRef.set({
+                    symbols: newSymbols
+                }, { merge: true})
+                    .then(async (response) => {
+                        await updateUser(username);
+                        console.log('done');
+                    })
+                    .catch((error) => {
+                        console.log('error: ' + error);
+                        debugger;
+                    });
+            }
+    
+            response.send('symbol added');
+    
+            return;
+        });        
     });
 });
