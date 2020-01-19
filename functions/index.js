@@ -3,8 +3,9 @@ const functions = require('firebase-functions');
 const axios = require('axios');
 const moment = require('moment');
 // const json = require('./data5'); // for testing
+const cors = require('cors')({origin: true});
 
-const serviceAccount = require("../month-mov-avg-notifier-firebase-adminsdk-qwmh7-c5e2115c16.json");
+const serviceAccount = require("./month-mov-avg-notifier-firebase-adminsdk-qwmh7-c5e2115c16.json");
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
@@ -14,11 +15,12 @@ admin.initializeApp({
 const firestore = admin.firestore();
 
 const runtimeOpts = {
-    timeoutSeconds: 300,
+    timeoutSeconds: 60,
     memory: '1GB'
 };
 
 async function fetchData(symbol) {    
+
     const now = moment();
     const nowUnix = now.format('X');
     const tenMonthsAgoUnix = moment(now).add(-9, 'months').format('X');
@@ -29,7 +31,7 @@ async function fetchData(symbol) {
     const response = await axios.get(url);
 
     if(response.status === 200) {
-        const averageResponse = calculateTenMonthMovingAverageResponse(response.data);
+        const averageResponse = calculateTenMonthMovingAverageResponse(symbol, response.data);
 
         const action = averageResponse.average > averageResponse.lastPrice ? 'GET OUT (SELL)' : 'STAY IN (AND BUY)';
         const margin = averageResponse.average > averageResponse.lastPrice ? (1 - averageResponse.lastPrice / averageResponse.average) : (1 - averageResponse.average / averageResponse.lastPrice);
@@ -54,7 +56,7 @@ async function fetchData(symbol) {
     }
 };
 
-function calculateTenMonthMovingAverageResponse(data) {
+function calculateTenMonthMovingAverageResponse(symbol, data) {
     const timestamps = data.chart.result[0].timestamp;
     const closing = data.chart.result[0].indicators.quote[0].close;
 
@@ -76,7 +78,7 @@ function calculateTenMonthMovingAverageResponse(data) {
         const currentUnixEpoch = timestamps[i];
         const currentDateTime = moment.unix(currentUnixEpoch);
 
-        if(currentDateTime.isSameOrAfter(targetDate)) {
+        if(currentDateTime.isAfter(targetDate)) {
 
             const currentClosingPrice = closing[i];
             const payload = {
@@ -89,11 +91,15 @@ function calculateTenMonthMovingAverageResponse(data) {
         }
     }
 
+    console.log('symbol: ' + symbol)
+
     // The most recent price.
-    prices.push({
-        price: lastPrice,
-        datetime: moment.unix(timestamps[timestamps.length - 1]).toString()
-    }); 
+    if(!symbol.includes('-USD')) {
+        prices.push({
+            price: lastPrice,
+            datetime: moment.unix(timestamps[timestamps.length - 1]).toString()
+        }); 
+    }
 
     const sum = prices.reduce((total, item) => {
         return total + item.price;
@@ -156,45 +162,47 @@ async function updateAllUsers() {
 }
 
 exports.calculateForUser = functions.https.onRequest(async (request, response) => {
-    const username = request.body.username;
+    cors(request, response, async () => {
+        const username = request.body.username;
 
-    if(username) {
-        const usersSnapshot = await firestore.collection('users').where('username', '==', username).get();
-        usersSnapshot.forEach((doc) => {
-            const data = doc.data();
-
-            console.log(`Updating Symbols for ${data.username}`);
+        if(username) {
+            const usersSnapshot = await firestore.collection('users').where('username', '==', username).get();
+            usersSnapshot.forEach((doc) => {
+                const data = doc.data();
     
-            const symbols = data.symbols;
+                console.log(`Updating Symbols for ${data.username}`);
+        
+                const symbols = data.symbols;
+        
+                console.log(`Object.keys(symbols): ${Object.keys(symbols)}`);
+        
+                Object.keys(symbols).forEach(async (sym) => {
+                    console.log(`Updating Symbol - ${sym}`);
+                    const response = await fetchData(sym);
+        
+                    const payload = {
+                        symbols: {
+                            [sym]: response
+                        }
+                    };
+        
+                    firestore.collection('users').doc(doc.id).set(payload, { merge: true })
+                        .then((response) => {
+                            console.log(`Successfully Updated ${sym} for ${data.username}`);
+                            
+                        })
+                        .catch((error) => {
+                            console.log(`Failed To Update ${sym} for ${data.username}`);
+                        }); 
+                });
     
-            console.log(`Object.keys(symbols): ${Object.keys(symbols)}`);
-    
-            Object.keys(symbols).forEach(async (sym) => {
-                console.log(`Updating Symbol - ${sym}`);
-                const response = await fetchData(sym);
-    
-                const payload = {
-                    symbols: {
-                        [sym]: response
-                    }
-                };
-    
-                firestore.collection('users').doc(doc.id).set(payload, { merge: true })
-                    .then((response) => {
-                        console.log(`Successfully Updated ${sym} for ${data.username}`);
-                        
-                    })
-                    .catch((error) => {
-                        console.log(`Failed To Update ${sym} for ${data.username}`);
-                    }); 
+                response.send('complete');
             });
-
-            response.send('complete');
-        });
-    }
-    else {
-        response.send('username field is missing from body');
-    }
+        }
+        else {
+            response.send('username field is missing from body');
+        }
+    });
 });
 
 exports.calculateAllUserAverage = functions.https.onRequest(async (request, response) => {
@@ -208,4 +216,25 @@ exports.calculateAllUserAverage = functions.https.onRequest(async (request, resp
 
 exports.tenMonthMovingAverage = functions.runWith(runtimeOpts).pubsub.schedule('0 17 * * *').onRun(async (context) => { 
     await updateAllUsers();
+});
+
+// NORMAL DATA ENDPOINTS
+exports.userData = functions.https.onRequest(async (request, response) => {
+    cors(request, response, async () => {
+        const username = request.body.username;
+
+        if(!username) {
+            response.send('username is missing');
+        }
+    
+        const usersSnapshot = await firestore.collection('users').where('username', '==', username).get();
+    
+        usersSnapshot.forEach((doc) => {
+            const data = doc.data();
+    
+            response.send(data);
+    
+            return;
+        });
+    });
 });
