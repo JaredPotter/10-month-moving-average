@@ -1,7 +1,6 @@
 import { Component } from '@angular/core';
 import { FormGroup, FormControl } from '@angular/forms';
 import axios from 'axios';
-// import { Moment } from 'moment';
 import * as moment from 'moment'
 
 @Component({
@@ -32,15 +31,14 @@ export class AppComponent {
   }
 
   handleAddSymbolSubmit() {
-    const url = 'https://us-central1-month-mov-avg-notifier.cloudfunctions.net/addSymbol';
+    // const url = 'https://us-central1-month-mov-avg-notifier.cloudfunctions.net/addSymbol';
+    const url = 'http://localhost:5001/month-mov-avg-notifier/us-central1/addSymbol';
     const symbol = this.newSymbolForm.value.symbol;
 
     if(!symbol) {
       alert('No symbol added');
       return;
     }
-
-    debugger;
 
     axios.post(url, {
       username: this.username,
@@ -49,6 +47,7 @@ export class AppComponent {
       .then((response) => {
         this.getUserData(this.username);
         debugger;
+        this.newSymbolForm.reset();
       })
       .catch((error) => {
         debugger;
@@ -85,13 +84,24 @@ export class AppComponent {
                 };
               })
             }
-
-
           }
           else {
             debugger;
           }
         });
+
+        this.symbolItemList = this.symbolItemList.sort((a, b) => {
+          if(a.symbol > b.symbol) {
+            return 1;
+          }
+          else if(a.symbol < b.symbol) {
+            return -1;
+          }
+
+          return 0;
+        });
+
+        debugger;
 
         this.username = data.username;
       })

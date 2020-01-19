@@ -4,6 +4,7 @@ const axios = require('axios');
 const moment = require('moment');
 // const json = require('./data5'); // for testing
 const cors = require('cors')({origin: true});
+const cheerio = require('cheerio');
 
 const serviceAccount = require("./month-mov-avg-notifier-firebase-adminsdk-qwmh7-c5e2115c16.json");
 
@@ -23,11 +24,14 @@ async function fetchData(symbol) {
 
     const now = moment();
     const nowUnix = now.format('X');
-    const tenMonthsAgoUnix = moment(now).add(-9, 'months').format('X');
-    // Example URL: https://query1.finance.yahoo.com/v8/finance/chart/SPY?symbol=SPY&period1=1552867200&period2=1579478400&interval=1d
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?symbol=${symbol}&period1=${tenMonthsAgoUnix}&period2=${nowUnix}&interval=1d`;    
+    const tenMonthsAgo = moment(now).add(-9, 'months');
+    tenMonthsAgo.date(now.date());
 
-    // axios.get(url, { queryString: qs.stringify(queryString)})
+    const tenMonthsAgoUnix = tenMonthsAgo.format('X');
+
+    debugger;
+    // Example URL: https://query1.finance.yahoo.com/v8/finance/chart/SPY?symbol=SPY&period1=1552867200&period2=1579478400&interval=1d
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?symbol=${symbol}&period1=${tenMonthsAgoUnix}&period2=${nowUnix}&interval=1d`;
     const response = await axios.get(url);
 
     if(response.status === 200) {
@@ -52,9 +56,34 @@ async function fetchData(symbol) {
     }
     else {
         console.log(response);
-        // TODO: respond to user.
+        
+        return null;
     }
 };
+
+async function getSymbolName(symbol) {
+    const url = `https://www.google.com/search?q=${symbol}`;
+    const googleResults = await axios.get(url);
+    const cheerioClient = cheerio.load(googleResults.data);
+    let name = null;
+
+    if(symbol.includes('-')) {
+        // Exchange Ratio between 2 currencies
+        const destinationCurrencyText = cheerioClient('#main > div:nth-child(4) > div > div:nth-child(3) > div > div > div > div > div:nth-child(2) > div > div > div > div > span').text();
+        const destinationCurrencySplit = destinationCurrencyText.split(' ');
+        const destinationCurrency= destinationCurrencySplit.splice(1, destinationCurrencySplit.length - 1).join('');
+        const originCurrencyText = cheerioClient('#main > div:nth-child(4) > div > div:nth-child(3) > div > div > div > div > div:nth-child(1) > div > div > div > div').text();
+        const originCurrencySplit = originCurrencyText.split(' ');        
+        const originCurrency = originCurrencySplit.splice(1, originCurrencySplit.length - 1).join(' ');
+        name = `${destinationCurrency} => ${originCurrency}`;
+    }
+    else {
+        // Fund / Stock Symbol
+        name = cheerioClient('#main > div:nth-child(5) > div > div.kCrYT > span:nth-child(1) > span').text();
+    }
+
+    return name;
+}
 
 function calculateTenMonthMovingAverageResponse(symbol, data) {
     const timestamps = data.chart.result[0].timestamp;
@@ -94,11 +123,11 @@ function calculateTenMonthMovingAverageResponse(symbol, data) {
     console.log('symbol: ' + symbol)
 
     // The most recent price.
-    if(!symbol.includes('-USD')) {
+    if(!symbol.includes('-')) {
         prices.push({
             price: lastPrice,
             datetime: moment.unix(timestamps[timestamps.length - 1]).toString()
-        }); 
+        });
     }
 
     const sum = prices.reduce((total, item) => {
@@ -127,6 +156,9 @@ function calculateTenMonthMovingAverageResponse(symbol, data) {
 // fetchData('XLY');
 // fetchData('SHOP');
 // fetchData('ALGN');
+// getSymbolName('MDB');
+// getSymbolName('VOO');
+// getSymbolName('BTC-USD');
 
 async function updateAllUsers() {
     const usersSnapshot = await firestore.collection('users').get();
@@ -161,7 +193,7 @@ async function updateAllUsers() {
     });
 }
 
-async function updateUser(username) {
+async function updateUserSymbols(username) {
     const usersSnapshot = await firestore.collection('users').where('username', '==', username).get();
     usersSnapshot.forEach((doc) => {
         const data = doc.data();
@@ -182,14 +214,12 @@ async function updateUser(username) {
                 }
             };
 
-            firestore.collection('users').doc(doc.id).set(payload, { merge: true })
-                .then((response) => {
-                    console.log(`Successfully Updated ${sym} for ${data.username}`);
-                    
-                })
-                .catch((error) => {
-                    console.log(`Failed To Update ${sym} for ${data.username}`);
-                }); 
+            const result = await firestore.collection('users').doc(doc.id).set(payload, { merge: true });
+            if(!result.writeTime) {
+                return false;
+            }
+
+            return true;
         });
     });
 }
@@ -199,7 +229,7 @@ exports.calculateForUser = functions.https.onRequest(async (request, response) =
         const username = request.body.username;
 
         if(username) {
-            await updateUser(username);
+            await updateUserSymbols(username);
 
             response.send('complete');
         }
@@ -256,30 +286,82 @@ exports.addSymbol = functions.https.onRequest(async (request, response) => {
 
         const usersSnapshot = await firestore.collection('users').where('username', '==', username).get();
 
-        usersSnapshot.forEach(async (doc) => {
+        for(doc of usersSnapshot.docs) {
             const data = doc.data();
-            const docRef = await firestore.collection('users').doc(doc.id);
+            const docRef = firestore.collection('users').doc(doc.id);
 
             if(data.username === username) {
                 const newSymbols = {...data.symbols};
                 newSymbols[symbol] = null;
 
-                docRef.set({
+                const setResponse = await docRef.set({
                     symbols: newSymbols
-                }, { merge: true})
-                    .then(async (response) => {
-                        await updateUser(username);
-                        console.log('done');
-                    })
-                    .catch((error) => {
-                        console.log('error: ' + error);
-                        debugger;
-                    });
+                }, { merge: true});
+
+                if(!setResponse._writeTime) {
+                    console.log(setResponse);
+                    response.send('symbol failed to add');
+                }
+
+                await updateUserSymbols(username);
+
+                response.send('symbol added');
+                
+                // docRef.set({
+                    //     symbols: newSymbols
+                    // }, { merge: true})
+                    //     .then(async (response) => {
+                        //         await updateUserSymbols(username);
+                        //         console.log('done');
+                        //     })
+                        //     .catch((error) => {
+                            //         console.log('error: ' + error);
+                            //         debugger;
+                            //     });
+                            
             }
-    
-            response.send('symbol added');
-    
-            return;
-        });        
+            else {
+                response.send('username is missing');
+            }
+        } 
+
+        // usersSnapshot.forEach(async (doc) => {
+        //     const data = doc.data();
+        //     const docRef = firestore.collection('users').doc(doc.id);
+
+        //     if(data.username === username) {
+        //         const newSymbols = {...data.symbols};
+        //         newSymbols[symbol] = null;
+
+        //         const setResponse = await docRef.set({
+        //             symbols: newSymbols
+        //         }, { merge: true});
+
+        //         if(!setResponse.updateTime) {
+        //             console.log(setResponse);
+        //             response.send('symbol failed to add');
+        //         }
+
+        //         await updateUserSymbols(username);
+
+        //         response.send('symbol added');
+                
+        //         // docRef.set({
+        //             //     symbols: newSymbols
+        //             // }, { merge: true})
+        //             //     .then(async (response) => {
+        //                 //         await updateUserSymbols(username);
+        //                 //         console.log('done');
+        //                 //     })
+        //                 //     .catch((error) => {
+        //                     //         console.log('error: ' + error);
+        //                     //         debugger;
+        //                     //     });
+                            
+        //     }
+        //     else {
+        //         response.send('username is missing');
+        //     }
+        // });        
     });
 });
