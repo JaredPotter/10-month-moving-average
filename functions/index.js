@@ -29,8 +29,9 @@ async function fetchData(symbol) {
     const tenMonthsAgoUnix = tenMonthsAgo.format('X');
 
     debugger;
-    // Example URL: https://query1.finance.yahoo.com/v8/finance/chart/SPY?symbol=SPY&period1=1552867200&period2=1579478400&interval=1d
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?symbol=${symbol}&period1=${tenMonthsAgoUnix}&period2=${nowUnix}&interval=1d`;
+    // Example URL: https://query1.finance.yahoo.com/v8/finance/chart/SPY?symbol=SPY&period1=1552867200&period2=1579478400&interval=1d&events=div
+    // Example URL: https://query1.finance.yahoo.com/v8/finance/chart/SPY?symbol=SPY&period1=1196110800&period2=1358888400&interval=1d&events=div // Nov 26 2007 - Jan 22 2013
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?symbol=${symbol}&period1=${tenMonthsAgoUnix}&period2=${nowUnix}&interval=1d&events=div`;
     const response = await axios.get(url);
 
     if (response.status === 200) {
@@ -193,7 +194,7 @@ async function updateAllUsers() {
 
         console.log(`Object.keys(symbols): ${Object.keys(symbols)}`);
 
-        for (let key of Object.keys(symbols)) {
+        for (let sym of Object.keys(symbols)) {
             console.log(`Updating Symbol - ${sym}`);
             const response = await fetchData(sym);
 
@@ -234,7 +235,7 @@ async function updateUserSymbols(username) {
 
         console.log(`Object.keys(symbols): ${Object.keys(symbols)}`);
 
-        for (let key of Object.keys(symbols)) {
+        for (let sym of Object.keys(symbols)) {
             console.log(`Updating Symbol - ${sym}`);
             const response = await fetchData(sym);
 

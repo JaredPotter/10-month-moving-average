@@ -1,5 +1,6 @@
 <div class="app-container">
   <h1>10-Month Moving Average</h1>
+  <canvas id="myChart" class="canvas" width="400" height="400"></canvas>
   <form [formGroup]="userForm" (ngSubmit)="handleSubmit()" *ngIf="this.symbolItemList.length === 0">
     <label>
       Username:
@@ -36,6 +37,7 @@
         <td>{{ symbolItem.datetime }}</td>
         <td>{{ symbolItem.action }}</td>
         <td>
+
           <ol>
             <li *ngFor="let price of symbolItem.prices">${{ (price.price).toFixed(2) + ' : ' + price.datetime}}</li>
           </ol>
