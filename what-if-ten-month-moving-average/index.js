@@ -6,17 +6,19 @@
 const dataJson = require('./data.json');
 const moment = require('moment');
 
-const startDate = moment('2007-12-3') 
-const endDate = moment('2013-01-22')
+const startDate = moment('2007-12-03', 'YYYY-MM-DD');
+const endDate = moment('2013-01-22', 'YYYY-MM-DD');
 
 const result = dataJson.chart.result[0];
 const timestamps = result.timestamp;
 const dividends = result.events.dividends;
 const closePrices = result.indicators.quote[0].close;
 
-const expenseRatio = 0.0945;
+const expenseRatio = 0.000945;
 const tradingDaysPerYear = 252;
 const tradingDayExpenseRatio = expenseRatio / tradingDaysPerYear;
+// const startingMarketState = true;
+// const isTenMonthMovingAverage = false;
 const startingMarketState = false;
 const isTenMonthMovingAverage = true;
 
@@ -43,8 +45,12 @@ for(let i = 0; i < priceDateTimes.length; i++) {
 
         if(timestampMoment.month() !== previousTimestamp.month()) {
             closingMonthPrices.push({
-                timestamp: previous.timestamp,
-                price: previous.price,
+                // End of Month Price
+                // timestamp: previous.timestamp,
+                // price: previous.price,
+                // Start of Month Price
+                timestamp: timestamp,
+                price: priceDateTimes[i].price,
             });                
         }
     }
@@ -59,7 +65,6 @@ let firstDayComplete = false;
 
 const finalBalanceObject = timestamps.reduce((results, timestamp, index) => {
     const closingPrice = closePrices[index];
-
     
     // If current date === last trading day of month,
     const date = moment.unix(timestamp);
@@ -95,6 +100,8 @@ const finalBalanceObject = timestamps.reduce((results, timestamp, index) => {
                 results.isInMarket = false;
                 debugger;
                 results.cash = results.shares * closingPrice;
+                console.log(`Shares Sold: ${results.shares}`);
+                results.shares = 0;
             }
             else if(!results.isInMarket && closingPrice > tenMonthMovingAverage) {
                 // GET IN - BUY
@@ -102,9 +109,10 @@ const finalBalanceObject = timestamps.reduce((results, timestamp, index) => {
                 console.log(`Average: $${tenMonthMovingAverage}`);
                 console.log(`Price: $${closingPrice}`);                
                 results.isInMarket = true;
-                debugger;
+                // debugger;
                 results.shares = results.cash / closingPrice;
                 results.cash = 0;
+                console.log(`Shares Bought: ${results.shares}`);                
             }
         }
     }
@@ -120,37 +128,37 @@ const finalBalanceObject = timestamps.reduce((results, timestamp, index) => {
         }
     
         // Daily Expense Ratio Fees
-        const fees = (closingPrice * results.shares) * tradingDayExpenseRatio; 
-        // results.cash -= fees;
-        results.feesPaid += fees;
+        const shareFees = results.shares * tradingDayExpenseRatio;
+        debugger;
+        results.shares -= shareFees;
+
+        results.shareFeesEaten += shareFees;
     }
 
     return results;
-}, { cash: startingBalance , feesPaid: 0, shares: startingShares, isInMarket: startingMarketState });
+}, { cash: startingBalance , shareFeesEaten: 0, shares: startingShares, isInMarket: startingMarketState });
 
 const lastPrice = closePrices[closePrices.length - 1];
 
+console.log(`lastPrice: ${lastPrice}`);
+
 if(isTenMonthMovingAverage) {
     console.log('CASE 2 - 10 MONTH MOVING AVERAGE');
-    finalBalanceObject.cash = finalBalanceObject.shares * lastPrice;
-    finalBalanceObject.shares = 0;
 }
 else {
     console.log('CASE 1 - RIDING THE ROLLERCOASTER');
-    finalBalanceObject.cash = finalBalanceObject.shares * lastPrice;
-    finalBalanceObject.shares = 0;
 }
+
+finalBalanceObject.cash = finalBalanceObject.shares * lastPrice;
+finalBalanceObject.shares = 0;
 
 console.log('STARTING DATE: ' + startDate.toString());
 console.log('ENDING DATE: ' + endDate.toString());
 
-// debugger;
-const finalBalance = finalBalanceObject.cash;
+console.log('shareFeesEaten: ' + finalBalanceObject.shareFeesEaten);
+console.log('shareFeesEaten Value ($): ' + finalBalanceObject.shareFeesEaten * lastPrice);
 
-console.log('feesPaid: ' + finalBalanceObject.feesPaid);
-console.log('shares: ' + finalBalanceObject.shares);
-
-console.log('finalBalance: ' + finalBalance);
+console.log('finalBalance: ' + finalBalanceObject.cash);
 debugger;
 
 function calculateTenMonthMovingAverage(timestamp, monthlyClosingPrices) {
