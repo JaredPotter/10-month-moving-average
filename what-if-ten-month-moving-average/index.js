@@ -1,26 +1,32 @@
  // Nov 26 2007 - Jan 22 2013
 // Example URL: https://query1.finance.yahoo.com/v8/finance/chart/SPY?symbol=SPY&period1=1196110800&period2=1358888400&interval=1d&events=div
-
+729129600
 // (Jan 26 2007 <- 10 month buffer;) Nov 26 2007 - Jan 22 2013
 // Example URL: https://query1.finance.yahoo.com/v8/finance/chart/SPY?symbol=SPY&period1=1169845200&period2=1358888400&interval=1d&events=div;
-const dataJson = require('./data.json');
+// const dataJson = require('./data.json');
+
 const moment = require('moment');
+const database = require('./database');
 
 // DEFAULT PARAMETERS
-const startDate = moment('2007-12-03', 'YYYY-MM-DD');
-const endDate = moment('2013-01-22', 'YYYY-MM-DD');
+const startDate = moment.utc('2007-12-03T14:30:00');
+const endDate = moment.utc('2013-01-22T14:30:00');
 const taxableAnnualSalary = 75000;
 const startingCash = 100000;
+const expenseRatio = 0.000945;
+const tradingDaysPerYear = 252;
+const tradingDayExpenseRatio = expenseRatio / tradingDaysPerYear;
 
-const tenMonthMovingAverageParams = {
-    startingInMarket: false,
-    startingCashMoney: startingCash,
-    startingMarketMoney: 0,
-    taxableAnnualSalary: taxableAnnualSalary,
-    startDate: startDate,
-    endDate: endDate,
-    method: 'tenMonthMovingAverage',
-};
+// const tenMonthMovingAverageParams = {
+//     startingInMarket: false,
+//     startingCashMoney: startingCash,
+//     startingMarketMoney: 0,
+//     taxableAnnualSalary: taxableAnnualSalary,
+//     startDate: startDate,
+//     endDate: endDate,
+//     method: 'tenMonthMovingAverage',
+//     symbol: 'SPY',
+// };
 
 const traditionalParams = {
     startingInMarket: true,
@@ -30,27 +36,89 @@ const traditionalParams = {
     startDate: startDate,
     endDate: endDate,
     method: 'traditional',
+    symbol: 'SPY',
 };
 
-const t = 1169821800;
-
-const mt = moment('2007-12-03T14:30:00', 'YYYY-MM-DDT')
-
 // const tenMonthMovingAverageResults = calculateModel(tenMonthMovingAverageParams);
+const traditionalResults = calculateModel(traditionalParams);
 
-
+debugger
 
 function calculateModel(params) {
-    const taxesOwed = 0;
-    const feesPaid = 0;
+    let taxesOwed = 0;
+    let feesPaid = 0;
     let previousPrice = null;
+    let isInMarket = params.startingInMarket;
+    let marketMoney = params.startingMarketMoney;
 
-    
+    const prices = database.getPrices(params.startDate, params.endDate, params.symbol);
+
+    for(let price of prices) {
+        // if( price.date is first trading day of month) { }
+        // Determine Buy/Sell
+        // const tenMonthMovingAverage = database.getTenMonthAverage(price.date, params.symbol);
+
+        // if(price.price > tenMonthMovingAverage) {
+
+        // }
+        // else if(tenMonthMovingAverage > price.price) {
+
+        // }
+
+        if(isInMarket) {
+            // Calculate fees (daily expense ratio)
+            const fees = marketMoney * tradingDayExpenseRatio;
+
+            feesPaid += fees;
+            marketMoney -= fees;
+            
+            if(previousPrice) {
+                // Calculate Gains / Losses
+                if(previousPrice > price.price) {
+                    // loss
+                    const loss = 1 - (price.price / previousPrice);
+                    marketMoney -= marketMoney * loss;
+                }
+                else if(price.price > previousPrice) {
+                    // gain
+                    const gain = 1 - (previousPrice / price.price);
+                    marketMoney += marketMoney * gain;
+                }
+            }
+
+            previousPrice = price.price;
+
+            const dividendAmount = database.getDividendAmount(price.timestamp, params.symbol);
+
+            if(dividendAmount) {
+                // TODO: calculate shares.
+                const shareCount = marketMoney / price.price;
+                const earnedDividendAmount = shareCount * dividendAmount;
+
+                // TODO: calculate tax for dividend
+                const year = moment.unix(price.timestamp).year();
+                // const taxAmount = database.calculateTaxForDividend(earnedDividendAmount, params.salary, year);
+                // taxesOwed += taxAmount;
+
+                marketMoney += earnedDividend
+
+                debugger;
+            }
+
+        }
+    }
+
 
     const results = { };
 
     return results;
 }
+
+
+
+
+
+// ~~~~~~~~~~~~~~~~~~~ OLD STUFF ~~~~~~~~~~~~~~~~~~~~~~~~
 
 function OLD_calculateModel() {
     const startDate = moment('2007-12-03', 'YYYY-MM-DD');
@@ -61,9 +129,7 @@ function OLD_calculateModel() {
     const dividends = result.events.dividends;
     const closePrices = result.indicators.quote[0].close;
     
-    const expenseRatio = 0.000945;
-    const tradingDaysPerYear = 252;
-    const tradingDayExpenseRatio = expenseRatio / tradingDaysPerYear;
+
     let startingBalance = 100000;
     let startingMarketMoney = 0;
     const startingMarketState = true;
