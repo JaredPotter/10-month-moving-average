@@ -73,6 +73,7 @@ const moment = require('moment');
 
 
 const SPYV2 = require('./SPY_V2');
+const taxes = require('./capitalGainsTax');
 
 const symbols = {
     SPY: SPYV2
@@ -112,21 +113,139 @@ function getDividendAmount(date, symbol) {
     return 0;
 }
 
-function calculateTaxForDividend(amount, salary, year) {
+/**
+ * 
+ * @param {*} amount The full amount in USD of dividend reward
+ * @param {*} salary 
+ * @param {*} year 
+ * @param {*} term 
+ */
+function calculateTaxForDividend(amount, salary, year, term) {
+    const brackets = taxes[year].brackets;
 
-}
+    let taxRate;
 
-function getTenMonthAverage(date, symbol) {
-    // getFirstTradingDayOfMonthClosingPrice()
+    for(let bracket of brackets) {
 
-    // determine if 10 months of data is available. Error if not.
+        // Top Income Bracket
+        // if(!bracket.maxBracketValue) {
+        //     if(term === 'short') {
+        //         taxRate = bracket.shortTermRate / 100;
+        //     } 
+        //     else if(term === 'long') {
+        //         taxRate = bracket.longTermRate / 100;
+        //     }
 
+        //     return amount * taxRate
+        // }
+        // else {
+        //     if(bracket.minBracketValue <= salary && salary <= bracket.maxBracketValue) {
     
+        //     }
+
+        // }
+    }
+    debugger;
 }
+
+function getTenMonthAverage(timestamp, symbol) {
+    // TODO: determine if 10 month moving average is possible (aka enough historical data)
+
+    const prices = symbols[symbol].prices;
+
+    const openingMonthPrice = getFirstTradingDayOfMonthClosingPrices(prices, timestamp);
+
+    const index = openingMonthPrice.findIndex((item) => {
+        return item.timestamp === timestamp;
+    });
+
+    debugger;
+
+    if(index > 9) {
+        const tenMonthPrices = openingMonthPrice.slice(index - 10, index);
+        const sum = tenMonthPrices.reduce((sum, item) => {
+            return sum += item.price;
+        }, 0);
+        const average = sum / tenMonthPrices.length;
+
+        debugger;
+    
+        return average;
+    }
+    debugger;
+
+
+
+
+    return 0;
+}
+
+
 
 // HELPER FUNCTIONS
-function getFirstTradingDayOfMonthClosingPrice(date) {
+function getFirstTradingDayOfMonthClosingPrices(prices, timestamp) {
+    const openingMonthPrices = [];
 
+    const targetTimestampMonth = moment.unix(timestamp).month();
+
+    for(let i = )
+
+    // let index = prices.findIndex((item) => {
+    //     return item.timestamp === timestamp;
+    // });
+
+    // let closingPrice = prices[index].price;
+
+    // let currentTimestampMonth = moment.unix(prices[index - 1].timestamp);
+debugger;
+
+while(openingMonthPrices.length < 10) {
+    debugger;
+    while(currentTimestampMonth.month() === targetTimestampMonth) {
+        index--;
+        closingPrice = prices[index - 1].price;
+        openingMonthPrices.push(closingPrice);
+        debugger;
+        
+        // firstTradingDay = 
+        currentTimestampMonth = moment.unix(prices[index].timestamp);
+
+    }
+
+}
+
+    // return closingPrice;
+
+
+
+    debugger;
+
+    // for(let i = 0; i < prices.length; i++) {
+    //     // const timestamp = prices[i].timestamp;
+    //     const timestampMoment = moment.unix(timestamp);
+    
+    //     if(i > 0) {
+    //         const previous = prices[i - 1];
+    //         const previousTimestamp = moment.unix(previous.timestamp);
+
+    //         debugger;
+    
+    //         if(timestampMoment.month() !== previousTimestamp.month()) {
+    //             openingMonthPrices.push({
+    //                 // End of Month Price
+    //                 // timestamp: previous.timestamp,
+    //                 // price: previous.price,
+    //                 // Start of Month Price
+    //                 timestamp: timestamp,
+    //                 price: prices[i].price,
+    //             });                
+    //         }
+    //     }
+    // }
+
+    debugger;
+
+    return openingMonthPrices;
 }
 
 

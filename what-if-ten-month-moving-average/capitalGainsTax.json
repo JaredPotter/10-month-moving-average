@@ -1,6 +1,6 @@
 {
     "2007": {
-        "rates": [
+        "brackets": [
             {
                 "minBracketValue": 0,
                 "maxBracketValue": 7825,
@@ -39,7 +39,7 @@
         ]
     },
     "2008": {
-        "rates": [
+        "brackets": [
             {
                 "minBracketValue": 0,
                 "maxBracketValue": 8025,
@@ -78,7 +78,7 @@
         ]
     },
     "2009": {
-        "rates": [
+        "brackets": [
             {
                 "minBracketValue": 0,
                 "maxBracketValue": 8350,
@@ -117,7 +117,7 @@
         ]
     },
     "2010": {
-        "rates": [
+        "brackets": [
             {
                 "minBracketValue": 0,
                 "maxBracketValue": 8375,
@@ -156,7 +156,7 @@
         ]
     },
     "2011": {
-        "rates": [
+        "brackets": [
             {
                 "minBracketValue": 0,
                 "maxBracketValue": 8500,
@@ -195,7 +195,7 @@
         ]
     },
     "2012": {
-        "rates": [
+        "brackets": [
             {
                 "minBracketValue": 0,
                 "maxBracketValue": 8700,
@@ -234,7 +234,7 @@
         ]
     },
     "2013": {
-        "rates": [
+        "brackets": [
             {
                 "minBracketValue": 0,
                 "maxBracketValue": 8925,
@@ -282,7 +282,7 @@
         ]
     },
     "2014": {
-        "rates": [
+        "brackets": [
             {
                 "minBracketValue": 0,
                 "maxBracketValue": 9075,
@@ -330,7 +330,7 @@
         ]
     },
     "2015": {
-        "rates": [
+        "brackets": [
             {
                 "minBracketValue": 0,
                 "maxBracketValue": 9225,
@@ -378,7 +378,7 @@
         ]
     },
     "2016": {
-        "rates": [
+        "brackets": [
             {
                 "minBracketValue": 0,
                 "maxBracketValue": 9275,
@@ -426,7 +426,7 @@
         ]
     },
     "2017": {
-        "rates": [
+        "brackets": [
             {
                 "minBracketValue": 0,
                 "maxBracketValue": 9325,
@@ -474,7 +474,7 @@
         ]
     },
     "2018": {
-        "rates": [
+        "brackets": [
             {
                 "minBracketValue": 0,
                 "maxBracketValue": 9525,
@@ -533,7 +533,7 @@
         ]
     },
     "2019": {
-        "rates": [
+        "brackets": [
             {
                 "minBracketValue": 0,
                 "maxBracketValue": 9700,
@@ -592,7 +592,7 @@
         ]
     },
     "2020": {
-        "rates": [
+        "brackets": [
             {
                 "minBracketValue": 0,
                 "maxBracketValue": 9875,
