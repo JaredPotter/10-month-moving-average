@@ -151,9 +151,11 @@ function calculateTaxForDividend(amount, salary, year, term) {
 function getTenMonthAverage(timestamp, symbol) {
     // TODO: determine if 10 month moving average is possible (aka enough historical data)
 
+    const lastUpdate = symbols[symbol].lastUpdate;
+
     const prices = symbols[symbol].prices;
 
-    const openingMonthPrice = getFirstTradingDayOfMonthClosingPrices(prices, timestamp);
+    // const openingMonthPrice = getFirstTradingDayOfMonthClosingPrices(prices, timestamp);
 
     const index = openingMonthPrice.findIndex((item) => {
         return item.timestamp === timestamp;
@@ -188,7 +190,7 @@ function getFirstTradingDayOfMonthClosingPrices(prices, timestamp) {
 
     const targetTimestampMonth = moment.unix(timestamp).month();
 
-    for(let i = )
+    // for(let i = )
 
     // let index = prices.findIndex((item) => {
     //     return item.timestamp === timestamp;

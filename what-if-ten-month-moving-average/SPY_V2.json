@@ -1,4 +1,5 @@
 {
+    "lastUpdate": 0,
     "meta": {
         "currency": "USD",
         "symbol": "SPY",
@@ -6951,5 +6952,8 @@
         "1561075200": { "amount": 1.432 },
         "1568937600": { "amount": 1.384 },
         "1576800000": { "amount": 1.57 }
-    }
+    },
+    "tenMonthMovingAverages": [
+        
+    ]
 }

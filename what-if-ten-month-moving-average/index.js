@@ -86,7 +86,7 @@ function calculateModel(params) {
                     // debugger;
                     const tenMonthMovingAverage = database.getTenMonthAverage(price.timestamp, params.symbol);
 
-                    if(tenMonthMovingAverage > price.price && isInMarket) {
+                    if(isInMarket && tenMonthMovingAverage > price.price) {
                         // SELL
                         const buyPrice = lastBuy.price;
                         const sellPrice = price.price;
@@ -96,16 +96,14 @@ function calculateModel(params) {
                         cashMoney += marketMoney
                         marketMoney = 0;
                     }
-                    else if(tenMonthMovingAverage < price.price && !isInMarket) {
+                    else if(!isInMarket && tenMonthMovingAverage < price.price) {
                         // BUY
                         lastBuy = price;
                         marketMoney += cashMoney;
                         cashMoney = 0;
-
                     }
                 }
             }
-
         }
         // if( price.date is first trading day of month) { }
         // Determine Buy/Sell
