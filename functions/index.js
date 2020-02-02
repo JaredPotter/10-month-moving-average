@@ -36,6 +36,10 @@ const fetchDailyData = async function() {
         const currentData = symbol;
 
         const data = await fetchData(id, lastUpdated, currentData);
+
+        // TODO: if 1st trading day of month, calculate 10 month moving average.
+    
+        // TODO: if 1st day of trading week, calculate 40 week moving average.
     }
 
     console.log(symbols)
@@ -45,17 +49,23 @@ const fetchDailyData = async function() {
 async function fetchData(symbol, lastUpdated, currentData) {
     const now = moment();
     const nowUnix = now.unix();
-    debugger;
 
     // const nowUnix = 946684800;
 
-    // Example URL: https://query1.finance.yahoo.com/v8/finance/chart/SPY?symbol=SPY&period1=1552867200&period2=1579478400&interval=1d&events=div
-    // Example URL: https://query1.finance.yahoo.com/v8/finance/chart/SPY?symbol=SPY&period1=1196110800&period2=1358888400&interval=1d&events=div // Nov 26 2007 - Jan 22 2013
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?symbol=${symbol}&period1=${lastUpdated}&period2=${nowUnix}&interval=1d&events=div`;
     const response = await axios.get(url);
+
+    if(response.status === 404) {
+        return;
+    }
     const data = response.data;
 
-    const transformedData = transformData(data);
+    if(!data.chart.result[0].timestamp) {
+        console.log('No New Data.');
+        return; 
+    }
+
+    const transformedData = await transformData(data);
 
     const newData = { ...currentData };
     debugger;
@@ -108,10 +118,11 @@ async function getSymbolName(symbol) {
 }
 
 
-function transformData(data) {
+async function transformData(data) {
     // TRANSFORM DATA
     const result = data.chart.result[0];
     // const meta = result.meta;
+    const symbol = result.meta.symbol;
     const timestamps = result.timestamp;
     const dividends = result.events ? result.events.dividends : {};
     const closePrices = result.indicators.quote[0].close;
@@ -127,21 +138,64 @@ function transformData(data) {
         newDividends[time] = {amount: dividends[key].amount }
     }
 
-    const prices = timestamps.reduce((arr, timestamp, index) => {
-        const closePrice = closePrices[index];
+    const prices = [];
+
+    debugger;
+
+    for(let i = 0; i < timestamps.length; i++) {
+        const timestamp = timestamps[i];
         const time = moment.unix(timestamp).utc().startOf('day').unix() + '';
+        const closePrice = closePrices[i];
 
-        const price = {
-            timestamp: time,
-            price: closePrice
-        };
+        // debugger;
+        // const existing = await prices.findIndex(async (price) => {
+            //     debugger;
+            //     return price.timestamp === time;
+            // })
+            
+            const price = {
+                timestamp: time,
+                price: closePrice
+            };
+            const existing = prices.findIndex((price) => {
+                return price.timestamp === time;
+            });
 
-        arr.push(price);
 
-        return arr;
-    }, []);
+            debugger;
+            
+            if(existing !== -1) {
+                debugger;
+                continue;
+            }
+            
+            // for(let price of prices) {
+                //     if(price.timestamp === time) {
+                    
+                    //     }
+                    // }
+                    
+                    // debugger;
+                    
+                    // if(existing !== -1) {
+                        //     continue;
+                        // }
+                        
+        const query = { $and: [ { _id: symbol }, { 'prices.timestamp': { $in: [time] } } ] };
+        const existingDay = await mongoDbService.findOne(query);
+        // debugger;
+        if(!existingDay) {
 
-    const nowUnix = moment().unix();
+
+            // const acc = await arr;
+
+            prices.push(price);
+        }
+    }
+
+    debugger;
+
+    const nowUnix = moment().utc().startOf('day').unix() + '';
 
     const transformedData = {
         prices: prices,
@@ -156,5 +210,4 @@ function transformData(data) {
 
 exports.fetchFinancialData = functions.runWith(runtimeOpts).pubsub.schedule(schedule).onRun(fetchDailyData);
 
-
-// fetchDailyData();
+fetchDailyData();

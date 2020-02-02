@@ -54,6 +54,25 @@ const mongoDbService = {
             });
         });
     },
+    async findOne(query = {}) {
+        while(!this._mongoDbClient) {
+            console.log('Attempting to connect...');
+            this._mongoDbClient = await this.connect();
+        }
+
+        return new Promise((resolve, reject) => {
+            const collection = this._mongoDbClient.collection(collectionName);
+    
+            collection.findOne(query, function(err, res) {
+                if(err) {
+                    reject(err);
+                }
+                else {
+                    resolve(res);
+                }
+            });
+        });
+    },
     async update(query, updatedDocument) {
         const lastUpdated = updatedDocument.lastUpdated;
         const prices = updatedDocument.prices;
