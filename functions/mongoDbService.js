@@ -77,8 +77,9 @@ const mongoDbService = {
         const lastUpdated = updatedDocument.lastUpdated;
         const prices = updatedDocument.prices;
         const dividends = updatedDocument.dividends;
+        const tenMonthMovingAverages = updatedDocument.tenMonthMovingAverages;
         
-        const updatedDoc = { $set: { lastUpdated, prices, dividends } };        
+        const updatedDoc = { $set: { lastUpdated, prices, dividends, tenMonthMovingAverages } };        
 
         while(!this._mongoDbClient) {
             console.log('Attempting to connect...');

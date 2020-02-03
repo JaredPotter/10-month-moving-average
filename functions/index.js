@@ -58,6 +58,7 @@ async function fetchData(symbol, lastUpdated, currentData) {
     if(response.status === 404) {
         return;
     }
+
     const data = response.data;
 
     if(!data.chart.result[0].timestamp) {
@@ -67,21 +68,73 @@ async function fetchData(symbol, lastUpdated, currentData) {
 
     const transformedData = await transformData(data);
 
+    // debugger
+
+    // if(transformedData.prices.length === 0 && Object.keys(transformedData.dividends).length === 0) {
+    //     return;
+    // }
+
     const newData = { ...currentData };
-    debugger;
+    
     newData.prices = newData.prices.concat(transformedData.prices);
     newData.dividends = { ...currentData.dividends, ...transformedData.dividends };
     newData.lastUpdated = transformedData.lastUpdated;
+    // debugger;
+    
 
-    debugger;
+
+
+    // Check if today is a new trading day month.
+    // debugger;
+    const prices = newData.prices;
+    const currentDay = prices[prices.length - 1];
+    const previousPreviousDay = prices[prices.length - 2];
+    const currentDayMoment = moment.unix(currentDay.timestamp).utc();
+    const previousPreviousDayMoment = moment.unix(previousPreviousDay.timestamp).utc();
+
+    if(previousPreviousDayMoment.isBefore(currentDayMoment, 'month')) {
+        debugger;
+
+        const sym = await mongoDbService.findOne({ _id: symbol });
+
+        if(sym) {
+            const tenMonthMovingAverages = sym.tenMonthMovingAverages;
+            let lastUpdated = tenMonthMovingAverages.lastUpdated;
+    
+            if(lastUpdated === '0') {
+                lastUpdated = prices[0].timestamp;
+            }
+            
+            const lastUpdatedMoment = moment.unix(Number(lastUpdated)).utc().startOf('day');;
+            // let lastUpdatedTimestamp = lastUpdatedMoment.unix();
+            const nowDay = Number(currentDay.timestamp);
+    
+            debugger;
+            const averages = [];
+            
+            // debugger;
+            while(lastUpdated < nowDay) {
+                const average = await calculateTenMonthMovingAverage(lastUpdated, symbol, newData.prices);
+    
+                if(average) {
+                    averages.push(average);
+                }
+    
+                lastUpdatedMoment.add(1, 'month');
+                lastUpdated = lastUpdatedMoment.unix();
+            }
+    
+            newData.tenMonthMovingAverages = {
+                lastUpdated: lastUpdated + '',
+                averages: newData.tenMonthMovingAverages.averages.concat(averages),
+            };
+        }
+    }
 
     const query = {
         _id: symbol
     };
-    const result = await mongoDbService.update(query, newData);
-
-    debugger;
-
+    const result = await mongoDbService.update(query, newData); 
 }
 
 async function getSymbolName(symbol) {
@@ -140,7 +193,7 @@ async function transformData(data) {
 
     const prices = [];
 
-    debugger;
+    // debugger;
 
     for(let i = 0; i < timestamps.length; i++) {
         const timestamp = timestamps[i];
@@ -162,7 +215,7 @@ async function transformData(data) {
             });
 
 
-            debugger;
+            // debugger;
             
             if(existing !== -1) {
                 debugger;
@@ -193,7 +246,7 @@ async function transformData(data) {
         }
     }
 
-    debugger;
+    // debugger;
 
     const nowUnix = moment().utc().startOf('day').unix() + '';
 
@@ -203,11 +256,144 @@ async function transformData(data) {
         lastUpdated: nowUnix + '',
     };
 
-    debugger;
+    // debugger;
 
     return transformedData;
 }
 
+async function calculateTenMonthMovingAverage(timestamp, prices) {
+    const timestampMoment = moment.unix(Number(timestamp)).utc().startOf('day');
+    const timestampMomentMinusTenMonths = moment(timestampMoment).add(-9, 'months');
+    
+
+    // const results = await mongoDbService.find({ _id: symbol }); 
+    // const prices = results[0].prices;
+
+    // debugger;
+
+    const firstPrice = prices[0];
+    const firstTimestamp = firstPrice.timestamp;
+    const firstTimestampMoment = moment.unix(Number(firstTimestamp));
+    // debugger;
+    // Before
+    if(timestampMomentMinusTenMonths.isBefore(firstTimestampMoment)) {
+        console.log('timestamp too early. Not enough historical data.');
+        return;
+    }
+
+    console.log(`There's enough historical data! - ${timestamp}`);
+
+    const momentDay = moment.unix(Number(timestamp)).utc();
+    
+    const averageArray = [];
+
+    while(averageArray.length !== 10) { // TODO: add another condition to break out.
+        const day = getFirstTradingDayOfMonth(prices, momentDay.unix());
+
+        // debugger;
+        if(day) {
+            averageArray.push(day);
+        }
+
+        momentDay.add(-1, 'months');
+        // debugger;
+    }
+
+    const sum = averageArray.reduce((sum, day) => {
+        return sum + day.price;
+    }, 0);
+    const average = sum / averageArray.length;
+
+    const first = averageArray[0].timestamp;
+
+    // debugger;
+
+    const tradingDayMoment = moment.unix(Number(first)).utc();
+
+    const tenMonthMovingAverage = {
+        average: average,
+        closingDayPrice: averageArray[0].price,
+        lastUpdated: tradingDayMoment.unix() + '',
+        title: tradingDayMoment.utc().format('MMM D, YYYY'),
+    };
+
+    return tenMonthMovingAverage;
+}   
+
+function getFirstTradingDayOfMonth(prices, timestamp) {
+    let pervious = null;
+    let current = null;
+    let next = null;
+    const targetMoment = moment.unix(Number(timestamp)).utc().startOf('day');
+    // const targetTimestamp = timestamp;
+    const targetYear = targetMoment.utc().year();
+    const targetMonth = targetMoment.utc().month();
+    // debugger;
+    const length = prices.length;
+
+    for(let i = 0; i < length; i++) {
+        current = prices[i];
+
+        if(i > 0) {
+            pervious = prices[i - 1];
+        }
+
+        // if(i < length - 1) {
+        //     next = prices[i + 1];
+        // }
+
+        // debugger;
+
+        if(pervious) {
+            const previousTimestamp = Number(pervious.timestamp);
+            const currentTimestamp = Number(current.timestamp);
+            const previousMoment = moment.unix(previousTimestamp).utc();
+            const currentMoment = moment.unix(currentTimestamp).utc();
+            const previousMonth = previousMoment.month();
+            const currentMonth = currentMoment.month();               
+            // const nextTimestamp = Number(next.timestamp);
+
+            // Month Changed.
+            if(previousMonth !== currentMonth) {
+                
+                // Check if target month and year match.
+                const currentYear = currentMoment.year();
+
+                if(currentMonth === targetMonth && currentYear === targetYear) {
+                    // debugger;
+                    return current;
+                }
+
+            }
+            // const previousMonthMoment = moment.unix(pervious.timestamp);
+            // const currentMonthMoment = moment.unix(current.timestamp);
+            
+            
+            // const previousMonth = previousMonthMoment.month();
+            // const currentMonth = currentMonthMoment.month();
+            // const currentYear = currentMonthMoment.year();
+            // // const previousMonth = moment.unix(pervious.timestamp).month();
+            // // const currentMonth = moment.unix(current.timestamp).month();
+
+            // if(previousMonth < targetMonth && targetMonth === currentMonth && targetYear === currentYear) {
+            //     // FOUND!
+
+            //     // debugger;
+
+            //     return current;
+            // }
+        }
+    }
+
+    debugger;
+}
+
 exports.fetchFinancialData = functions.runWith(runtimeOpts).pubsub.schedule(schedule).onRun(fetchDailyData);
 
-fetchDailyData();
+// fetchDailyData();
+
+// calculateTenMonthMovingAverage(0, 'SPY');
+// calculateTenMonthMovingAverage(725932800, 'SPY'); // 1993 / 1 / 2
+// calculateTenMonthMovingAverage(749433600, 'SPY'); // 1993 / 10 / 1
+// calculateTenMonthMovingAverage(752198400, 'SPY'); // 1993 / 11 / 2
+// calculateTenMonthMovingAverage(753148800, 'SPY'); // 1993 / 11 / 13 (sat)
