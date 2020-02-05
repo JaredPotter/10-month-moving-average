@@ -1,30 +1,23 @@
-import { Component, OnInit } from '@angular/core';
-import Chart from 'chart.js';
-import axios from 'axios';
-
+import { Component, OnInit } from "@angular/core";
+import Chart from "chart.js";
+import axios from "axios";
 
 @Component({
-  selector: 'app-home-page',
-  templateUrl: './home-page.component.html',
-  styleUrls: ['./home-page.component.scss']
+  selector: "app-home-page",
+  templateUrl: "./home-page.component.html",
+  styleUrls: ["./home-page.component.scss"]
 })
 export class HomePageComponent implements OnInit {
-  constructor() { }
+  constructor() {}
 
-  public latestTitle = '';
-  public latestAverage = '';
-  public latestPrice = '';
-  public marketStatus = '';
-  public symbolName = '';
-  public symbolId = '';
+  public latestTitle = "";
+  public latestAverage = "";
+  public latestPrice = "";
+  public marketStatus = "";
+  public symbolName = "";
+  public symbolId = "";
 
-  public chartOptions = {
-
-  };
-
-
-
-
+  public chartOptions = {};
 
   ngOnInit() {
     // var ctx = document.getElementById('myChart');
@@ -62,13 +55,13 @@ export class HomePageComponent implements OnInit {
     // };
     // var myChart = new Chart(ctx, chartOptions);
 
-
     // return;
-    const symbolId = 'SPY';
+    const symbolId = "SPY";
     const url = `https://us-central1-month-mov-avg-notifier.cloudfunctions.net/latestTenMonthMovingAverage?id=${symbolId}`;
 
-    axios.get(url)
-      .then((response) => {
+    axios
+      .get(url)
+      .then(response => {
         const latestAverage = response.data.latestAverage;
 
         this.symbolName = response.data.name;
@@ -77,96 +70,153 @@ export class HomePageComponent implements OnInit {
         this.latestAverage = latestAverage.average;
         this.latestPrice = latestAverage.closingDayPrice;
 
-        if(this.latestPrice > this.latestAverage) {
-          this.marketStatus = 'IN';
-        }
-        else if(this.latestPrice < this.latestAverage) {
-          this.marketStatus = 'OUT';
+        if (this.latestPrice > this.latestAverage) {
+          this.marketStatus = "IN";
+        } else if (this.latestPrice < this.latestAverage) {
+          this.marketStatus = "OUT";
         }
       })
-      .catch((error) => {
+      .catch(error => {
         console.log(error);
         debugger;
       });
 
-      // Fetch Chart Data
-      const chartDataUrl = `https://us-central1-month-mov-avg-notifier.cloudfunctions.net/tenMonthMovingAverages?id=${symbolId}`
-      const labels = [];
-      const prices = [];
-      const averages = [];
+    // Fetch Chart Data
+    const chartDataUrl = `https://us-central1-month-mov-avg-notifier.cloudfunctions.net/tenMonthMovingAverages?id=${symbolId}`;
+    const labels = [];
+    const prices = [];
+    const averages = [];
 
+    axios
+      .get(chartDataUrl)
+      .then(response => {
+        const aves = response.data.averages;
 
-      axios.get(chartDataUrl)
-        .then((response) => {
-          const aves = response.data.averages;
-debugger;
-          for(let i = 0; i < aves.length; i++) {
-            const ave = aves[i];
-            const label = ave.title;
-            const price = ave.closingDayPrice;
-            const average = ave.average;
+        for (let i = 0; i < aves.length; i++) {
+          const ave = aves[i];
+          const label = ave.title;
+          const price = ave.closingDayPrice;
+          const average = ave.average;
 
-            labels.push(label);
-            prices.push(price);
-            averages.push(average);
-          }
+          labels.push(label);
+          prices.push(price);
+          averages.push(average);
+        }
 
-          const data = {
-            labels,
-            prices,
-            averages,
-          };
+        const data = {
+          labels,
+          prices,
+          averages
+        };
 
-          this.renderChart(data);
-        })
-        .catch((error) => {
-          console.log(error);
-          debugger;
-        });
+        this.renderChart(data);
+      })
+      .catch(error => {
+        console.log(error);
+        debugger;
+      });
   }
 
   renderChart(data) {
     const labels = data.labels;
     const prices = data.prices;
     const averages = data.averages;
-    var ctx = document.getElementById('myChart');
-
+    var ctx = document.getElementById("myChart");
+    this.setupChartPlugs();
     // debugger;
     const chartOptions = {
-      type: 'line',
+      type: "line",
       data: {
-          labels: labels,
-          datasets: [{
-              label: 'S&P 500 Price',
-              data: prices,
-              borderColor: [
-                  '#3382EA'
-              ],
-              fill: false,
+        labels: labels,
+        datasets: [
+          {
+            label: "S&P 500 Price",
+            data: prices,
+            borderColor: "#3382EA",
+            backgroundColor: "#3382EA",
+            fill: false,
+            pointRadius: 0
           },
           {
-            label: 'S&P 500 10 Month Moving Average',
+            label: "S&P 500 10 Month Moving Average",
             data: averages,
-            borderColor: '#A375F7',
+            borderColor: "#A375F7",
+            backgroundColor: "#A375F7",
             fill: false,
+            pointRadius: 0
           }
-
         ]
       },
       options: {
-          scales: {
-              yAxes: [{
-                  ticks: {
-                      beginAtZero: true
-                  }
-              }]
+        scales: {
+          yAxes: [
+            {
+              ticks: {
+                callback: function(value, index, values) {
+                  return "$" + value;
+                }
+              }
+            }
+          ]
+        },
+        tooltips: {
+          displayColors: true,
+          mode: "index",
+          callbacks: {
+            label: function(tooltipItem, data) {
+              let label = data.datasets[tooltipItem.datasetIndex].label || "";
+
+              if (label) {
+                label += ": $";
+              }
+
+              label += Math.round(tooltipItem.yLabel * 100) / 100;
+
+              return label;
+            }
           }
-      }
+        }
+      },
+      lineAtIndex: [50]
     };
+
+
     var myChart = new Chart(ctx, chartOptions);
 
-
-    return;
   }
 
+  setupChartPlugs() {
+    const verticalLinePlugin = {
+      getLinePosition: function (chart, pointIndex) {
+          const meta = chart.getDatasetMeta(0); // first dataset is used to discover X coordinate of a point
+          const data = meta.data;
+          return data[pointIndex]._model.x;
+      },
+      renderVerticalLine: function (chartInstance, pointIndex) {
+          const lineLeftOffset = this.getLinePosition(chartInstance, pointIndex);
+          const scale = chartInstance.scales['y-axis-0'];
+          const context = chartInstance.chart.ctx;
+
+          // render vertical line
+          context.beginPath();
+          context.strokeStyle = '#ff0000';
+          context.moveTo(lineLeftOffset, scale.top);
+          context.lineTo(lineLeftOffset, scale.bottom);
+          context.stroke();
+
+          // write label
+          context.fillStyle = "#ff0000";
+          context.textAlign = 'center';
+          context.fillText('MY TEXT', lineLeftOffset, (scale.bottom - scale.top) / 2 + scale.top);
+      },
+
+      afterDatasetsDraw: function (chart, easing) {
+          if (chart.config.lineAtIndex) {
+              chart.config.lineAtIndex.forEach(pointIndex => this.renderVerticalLine(chart, pointIndex));
+          }
+      }
+      };
+
+      Chart.plugins.register(verticalLinePlugin);
+  }
 }
