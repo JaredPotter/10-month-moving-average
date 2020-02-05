@@ -1,0 +1,11 @@
+SHCOMP - Shanghai Stock Exchange
+BOVESPA - Brazil Stock Market
+SENSEX - Bombay Stock Exchange (India)
+NI225 - Tokyo Stock Exchange
+FTSE - London Stock Exchange
+DAX - Frankfurt Stock Exchange
+CAC - France Stock Exchange
+HSI - Hong Kong Stock Exchange
+OSPTX - Toronto Stock Exchange
+^MXX - Mexico Stock Exchange
+KOSPI - Korea Stock Exchange

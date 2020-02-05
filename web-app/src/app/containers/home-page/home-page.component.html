@@ -1,0 +1,27 @@
+<div class="home-page-container">
+  <div>~~~~~~~~~~~~~~~~~~~~~~~>~~~~~~~~~~~~~~~~~~~~~~~>~~~~~~~~~~~~~~~~~~~~~~~>~~~~~~~~~~~~~~~~~~~~~~~</div>
+  <canvas id="myChart" width="400" height="400"></canvas>
+  <div>~~~~~~~~~~~~~~~~~~~~~~~>~~~~~~~~~~~~~~~~~~~~~~~>~~~~~~~~~~~~~~~~~~~~~~~>~~~~~~~~~~~~~~~~~~~~~~~</div>
+  <div class="latest" *ngIf="this.latestPrice">
+    <h1>LATEST 10 MONTH MOVING AVERAGE</h1>
+    <h3>{{ this.symbolName }} (<a href="https://www.google.com/search?q={{this.symbolId}}">{{this.symbolId}}</a>)</h3>
+    <h3>{{ this.latestTitle }} (First Trading Day of The Month)</h3>
+    <h3>{{ this.latestTitle }} Closing Day Price: ${{ this.latestPrice.toFixed(2) }}</h3>
+    <h3>10 Month Moving Average: ${{ this.latestAverage.toFixed(2) }}</h3>
+    <h2 *ngIf="this.marketStatus === 'IN'">Because the Price (${{ this.latestPrice.toFixed(2) }}) is <u>greater</u> than the 10 Month Moving Average (${{ this.latestAverage.toFixed(2) }}) you want to be IN the market.</h2>
+    <h2 *ngIf="this.marketStatus === 'OUT'">Because the Price (${{ this.latestPrice.toFixed(2) }}) is <u>less</u> than the 10 Month Moving Average (${{ this.latestAverage.toFixed(2) }}) you want to be OUT OF market.</h2>
+    <h3>Next Update: The First Trading Day of Next Month</h3>
+  </div>
+  <h1>Are You Invested in The Market?</h1>
+  <div class="market">
+    <h3 class="hold">Hold</h3>
+    <h3 class="get-out">Get Out</h3>
+    <h3 class="buy-more">Buy More</h3>
+  </div>
+  <h1>|| OR ||</h1>
+  <h1>Are You <u>Not?</u></h1>
+  <div class="not-market">
+    <h3 class="get-in">Get In</h3>
+    <h3 class="stay-out">Stay Out</h3>
+  </div>
+</div>
