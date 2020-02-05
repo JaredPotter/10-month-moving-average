@@ -1,28 +1,26 @@
-const admin = require('firebase-admin');
+// const admin = require('firebase-admin');
 const functions = require('firebase-functions');
 const axios = require('axios');
 const moment = require('moment');
-const cors = require('cors')({ origin: true });
+// const cors = require('cors');
+// const corsHandler = cors({origin: true});
+const cors = require('cors')({origin: true});
 
 const mongoDbService = require('./mongoDbService')
+// const serviceAccount = require('./month-mov-avg-notifier-firebase-adminsdk-qwmh7-c5e2115c16.json');
 
-const serviceAccount = require('./month-mov-avg-notifier-firebase-adminsdk-qwmh7-c5e2115c16.json');
-
-admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    databaseURL: 'https://month-mov-avg-notifier.firebaseio.com'
-});
-
-const firestore = admin.firestore();
+// admin.initializeApp({
+//     credential: admin.credential.cert(serviceAccount),
+//     databaseURL: 'https://month-mov-avg-notifier.firebaseio.com'
+// });
 
 const runtimeOpts = {
-    timeoutSeconds: 60,
-    memory: '1GB'
+    timeoutSeconds: 120,
+    memory: '2GB'
 };
 
 // Cron Job Schedule - How Often to trigger the function.
 const schedule = '0 17 * * *'; // Everyday at 9am server time.
-
 
 const fetchDailyData = async function() {
     console.log('Running Daily Fetch Data');
@@ -37,7 +35,64 @@ const fetchDailyData = async function() {
 
         const data = await fetchData(id, lastUpdated, currentData);
 
-        // TODO: if 1st trading day of month, calculate 10 month moving average.
+        if(!data) {
+            console.log('No New Data!');
+            continue;
+        }
+
+        const newData = { ...currentData };
+    
+        newData.prices = newData.prices.concat(data.prices);
+        newData.dividends = { ...currentData.dividends, ...data.dividends };
+        newData.lastUpdated = data.lastUpdated;
+
+        // Check if today is a new trading day month.
+        const prices = newData.prices;
+        const currentDay = prices[prices.length - 1];
+        const previousPreviousDay = prices[prices.length - 2];
+        const currentDayMoment = moment.unix(currentDay.timestamp).utc();
+        const previousPreviousDayMoment = moment.unix(previousPreviousDay.timestamp).utc();
+    
+        if(previousPreviousDayMoment.isBefore(currentDayMoment, 'month')) {
+            console.log('First Trading Day of the Month!!!');
+    
+            const tenMonthMovingAverages = symbol.tenMonthMovingAverages;
+            let lastUpdated = tenMonthMovingAverages.lastUpdated;
+    
+            if(lastUpdated === '0') {
+                lastUpdated = prices[0].timestamp;
+            }
+            
+            const lastUpdatedMoment = moment.unix(Number(lastUpdated)).utc().startOf('day');
+            lastUpdatedMoment.add(1, 'month');
+            lastUpdated = lastUpdatedMoment.unix();
+
+            const nowDay = Number(currentDay.timestamp);
+            const averages = [];
+            
+            // debugger;
+            while(lastUpdated < nowDay) {
+                const average = await calculateTenMonthMovingAverage(lastUpdated, newData.prices);
+    
+                if(average) {
+                    averages.push(average);
+                }
+    
+                lastUpdatedMoment.add(1, 'month');
+                lastUpdated = lastUpdatedMoment.unix();
+            }
+    
+            newData.tenMonthMovingAverages = {
+                lastUpdated: nowDay + '',
+                averages: newData.tenMonthMovingAverages.averages.concat(averages),
+            };
+        }
+    
+        // UPDATE SYMBOL
+        const query = {
+            _id: id
+        };
+        const result = await mongoDbService.update(query, newData);
     
         // TODO: if 1st day of trading week, calculate 40 week moving average.
     }
@@ -68,73 +123,11 @@ async function fetchData(symbol, lastUpdated, currentData) {
 
     const transformedData = await transformData(data);
 
-    // debugger
-
-    // if(transformedData.prices.length === 0 && Object.keys(transformedData.dividends).length === 0) {
-    //     return;
-    // }
-
-    const newData = { ...currentData };
-    
-    newData.prices = newData.prices.concat(transformedData.prices);
-    newData.dividends = { ...currentData.dividends, ...transformedData.dividends };
-    newData.lastUpdated = transformedData.lastUpdated;
-    // debugger;
-    
-
-
-
-    // Check if today is a new trading day month.
-    // debugger;
-    const prices = newData.prices;
-    const currentDay = prices[prices.length - 1];
-    const previousPreviousDay = prices[prices.length - 2];
-    const currentDayMoment = moment.unix(currentDay.timestamp).utc();
-    const previousPreviousDayMoment = moment.unix(previousPreviousDay.timestamp).utc();
-
-    if(previousPreviousDayMoment.isBefore(currentDayMoment, 'month')) {
-        debugger;
-
-        const sym = await mongoDbService.findOne({ _id: symbol });
-
-        if(sym) {
-            const tenMonthMovingAverages = sym.tenMonthMovingAverages;
-            let lastUpdated = tenMonthMovingAverages.lastUpdated;
-    
-            if(lastUpdated === '0') {
-                lastUpdated = prices[0].timestamp;
-            }
-            
-            const lastUpdatedMoment = moment.unix(Number(lastUpdated)).utc().startOf('day');;
-            // let lastUpdatedTimestamp = lastUpdatedMoment.unix();
-            const nowDay = Number(currentDay.timestamp);
-    
-            debugger;
-            const averages = [];
-            
-            // debugger;
-            while(lastUpdated < nowDay) {
-                const average = await calculateTenMonthMovingAverage(lastUpdated, symbol, newData.prices);
-    
-                if(average) {
-                    averages.push(average);
-                }
-    
-                lastUpdatedMoment.add(1, 'month');
-                lastUpdated = lastUpdatedMoment.unix();
-            }
-    
-            newData.tenMonthMovingAverages = {
-                lastUpdated: lastUpdated + '',
-                averages: newData.tenMonthMovingAverages.averages.concat(averages),
-            };
-        }
+    if(transformedData.prices.length === 0 && Object.keys(transformedData.dividends).length === 0) {
+        return;
     }
 
-    const query = {
-        _id: symbol
-    };
-    const result = await mongoDbService.update(query, newData); 
+    return transformedData;
 }
 
 async function getSymbolName(symbol) {
@@ -198,45 +191,23 @@ async function transformData(data) {
     for(let i = 0; i < timestamps.length; i++) {
         const timestamp = timestamps[i];
         const time = moment.unix(timestamp).utc().startOf('day').unix() + '';
-        const closePrice = closePrices[i];
-
-        // debugger;
-        // const existing = await prices.findIndex(async (price) => {
-            //     debugger;
-            //     return price.timestamp === time;
-            // })
-            
-            const price = {
-                timestamp: time,
-                price: closePrice
-            };
-            const existing = prices.findIndex((price) => {
-                return price.timestamp === time;
-            });
-
-
-            // debugger;
-            
-            if(existing !== -1) {
-                debugger;
-                continue;
-            }
-            
-            // for(let price of prices) {
-                //     if(price.timestamp === time) {
-                    
-                    //     }
-                    // }
-                    
-                    // debugger;
-                    
-                    // if(existing !== -1) {
-                        //     continue;
-                        // }
+        const closePrice = closePrices[i];            
+        const price = {
+            timestamp: time,
+            price: closePrice
+        };
+        const existing = prices.findIndex((price) => {
+            return price.timestamp === time;
+        });
+        
+        if(existing !== -1) {
+            debugger;
+            continue;
+        }
                         
         const query = { $and: [ { _id: symbol }, { 'prices.timestamp': { $in: [time] } } ] };
         const existingDay = await mongoDbService.findOne(query);
-        // debugger;
+
         if(!existingDay) {
 
 
@@ -264,17 +235,10 @@ async function transformData(data) {
 async function calculateTenMonthMovingAverage(timestamp, prices) {
     const timestampMoment = moment.unix(Number(timestamp)).utc().startOf('day');
     const timestampMomentMinusTenMonths = moment(timestampMoment).add(-9, 'months');
-    
-
-    // const results = await mongoDbService.find({ _id: symbol }); 
-    // const prices = results[0].prices;
-
-    // debugger;
-
     const firstPrice = prices[0];
     const firstTimestamp = firstPrice.timestamp;
     const firstTimestampMoment = moment.unix(Number(firstTimestamp));
-    // debugger;
+
     // Before
     if(timestampMomentMinusTenMonths.isBefore(firstTimestampMoment)) {
         console.log('timestamp too early. Not enough historical data.');
@@ -388,7 +352,81 @@ function getFirstTradingDayOfMonth(prices, timestamp) {
     debugger;
 }
 
+function getLastTradingDayOfMonth(prices, timestamp) {
+    // TODO: implement
+}
+
 exports.fetchFinancialData = functions.runWith(runtimeOpts).pubsub.schedule(schedule).onRun(fetchDailyData);
+
+exports.symbols = functions.https.onRequest(async (req, res) => {
+    const method = req.method;
+    const id = req.query['id'];
+    switch(method) {
+        case 'GET':
+            const symbol = await mongoDbService.findOne({ _id: id });
+            // TODO: Get data.
+            console.log('GET THE DATA!');
+            res.send('yay!');
+            break;
+    }
+});
+
+exports.tenMonthMovingAverages = functions.https.onRequest(async (req, res) => {
+    const method = req.method;
+    const id = req.query['id'];
+    console.log('HERERE: ' + id)
+
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'GET, PUT, POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', '*');    
+
+    switch(method) {
+        case 'GET':
+            const symbol = await mongoDbService.findOne({ _id: id });
+            const tenMonthMovingAverages = symbol.tenMonthMovingAverages;
+
+            res.send(tenMonthMovingAverages);
+            return;
+    }
+});
+
+exports.latestTenMonthMovingAverage = functions.https.onRequest(async (req, res) => {
+    console.log('latestTenMonthMovingAverage: CALLED()');
+    const id = req.query.id;
+    console.log(`id: ${id}`);
+
+    if(!id) {
+        res.send('Missing Required Parameter: id');
+        return;
+    }
+
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'GET, PUT, POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', '*');    
+
+    // return cors(req, res, async () => {
+    
+        const symbol = await mongoDbService.findOne({ _id: id });
+
+        if(!symbol) {
+            res.send(`${id} Does Not Exist!`);
+            return;
+        }
+        const tenMonthMovingAverages = symbol.tenMonthMovingAverages;
+        const title = tenMonthMovingAverages.title;
+    
+        const latestAverage = symbol.tenMonthMovingAverages.averages[symbol.tenMonthMovingAverages.averages.length - 1];
+
+        const response = {
+            id: symbol._id,
+            name: symbol.name,
+            title,
+            latestAverage,
+        };
+    
+        res.send(response);
+    // });    
+});
 
 // fetchDailyData();
 
@@ -397,3 +435,5 @@ exports.fetchFinancialData = functions.runWith(runtimeOpts).pubsub.schedule(sche
 // calculateTenMonthMovingAverage(749433600, 'SPY'); // 1993 / 10 / 1
 // calculateTenMonthMovingAverage(752198400, 'SPY'); // 1993 / 11 / 2
 // calculateTenMonthMovingAverage(753148800, 'SPY'); // 1993 / 11 / 13 (sat)
+
+console.log('DEPLOYMENT SUCCESSFUL!');
