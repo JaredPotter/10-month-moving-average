@@ -8,3 +8,14 @@
   width: 90%;
   // height: 350px;
 }
+
+.chart-options {
+  display: flex;
+  justify-content: space-between;
+
+  button {
+    font-size: 20px;
+    padding: 12px;
+    cursor: pointer;
+  }
+}

@@ -1,6 +1,8 @@
 import { Component, OnInit } from "@angular/core";
 import Chart from "chart.js";
 import axios from "axios";
+import * as moment from 'moment';
+import { Moment } from 'moment';
 
 @Component({
   selector: "app-home-page",
@@ -57,6 +59,14 @@ export class HomePageComponent implements OnInit {
 
     // return;
     const symbolId = "SPY";
+
+    this.symbolId = symbolId;
+
+    this.fetchData(symbolId, null, null);
+
+  }
+
+  fetchData(symbolId: string, startDate: Moment = null, endDate: Moment = null): void {
     const url = `https://us-central1-month-mov-avg-notifier.cloudfunctions.net/latestTenMonthMovingAverage?id=${symbolId}`;
 
     axios
@@ -87,8 +97,18 @@ export class HomePageComponent implements OnInit {
     const prices = [];
     const averages = [];
 
+    const params = new URLSearchParams();
+
+    if(startDate && endDate) {
+      const start = startDate.utc().startOf('day').unix();
+      const end = endDate.utc().startOf('day').unix();
+
+      params.append('start', start.toString());
+      params.append('end', end.toString());
+    }
+
     axios
-      .get(chartDataUrl)
+      .get(chartDataUrl, { params })
       .then(response => {
         const aves = response.data.averages;
 
@@ -117,12 +137,67 @@ export class HomePageComponent implements OnInit {
       });
   }
 
+  handleChartOptionClick(action: string): void {
+    let startDate = null
+    let endDate = null;
+
+    switch(action) {
+      case 'all':
+        this.fetchData(this.symbolId, null, null);
+        break;
+      case '2000':
+        startDate = moment.utc('04/03/2000');
+        endDate = moment.utc('06/01/2007');
+        debugger;
+        this.fetchData(this.symbolId, startDate, endDate);
+        break;
+      case '2007':
+        startDate = moment();
+        endDate = moment();
+        break;
+    }
+  }
+
   renderChart(data) {
     const labels = data.labels;
     const prices = data.prices;
     const averages = data.averages;
     var ctx = document.getElementById("myChart");
     this.setupChartPlugs();
+
+
+    // Calculate BUY and SELL indexes
+    let isInMarket = false;
+    const sellIndexes = [];
+    const buyIndexes = [];
+
+    if(prices[0] >= averages[0]) {
+      isInMarket = true;
+    }
+
+    for(let i = 0; i < prices.length; i++) {
+      const price = prices[i];
+      const average = averages[i];
+// debugger;
+      if(price >= average && isInMarket) {
+        // debugger;
+        // Do nothing. Remain in the market.
+      }
+      else if(average >= price && isInMarket) {
+        // SELL
+        isInMarket = false;
+        sellIndexes.push(i);
+      }
+      else if(price >= average && !isInMarket) {
+        // BUY
+        isInMarket = true;
+        buyIndexes.push(i);
+      }
+      else if(averages >= price && !isInMarket) {
+        // Do nothing. Remain out of the market.
+      }
+    }
+
     // debugger;
     const chartOptions = {
       type: "line",
@@ -177,12 +252,20 @@ export class HomePageComponent implements OnInit {
           }
         }
       },
-      lineAtIndex: [50]
+      lineAtIndex: [
+        {
+          label: 'BUY',
+          color: '#8DC045',
+          indexes: buyIndexes
+        },
+        {
+          label: 'SELL',
+          color: '#ff0000',
+          indexes: sellIndexes
+        },
+      ]
     };
-
-
     var myChart = new Chart(ctx, chartOptions);
-
   }
 
   setupChartPlugs() {
@@ -192,31 +275,40 @@ export class HomePageComponent implements OnInit {
           const data = meta.data;
           return data[pointIndex]._model.x;
       },
-      renderVerticalLine: function (chartInstance, pointIndex) {
+      renderVerticalLine: function (chartInstance, pointIndex, pointItem) {
           const lineLeftOffset = this.getLinePosition(chartInstance, pointIndex);
           const scale = chartInstance.scales['y-axis-0'];
           const context = chartInstance.chart.ctx;
 
+          // debugger;
+
           // render vertical line
           context.beginPath();
-          context.strokeStyle = '#ff0000';
+          context.strokeStyle = pointItem.color;
           context.moveTo(lineLeftOffset, scale.top);
           context.lineTo(lineLeftOffset, scale.bottom);
           context.stroke();
 
           // write label
-          context.fillStyle = "#ff0000";
+          context.fillStyle = pointItem.color;
           context.textAlign = 'center';
-          context.fillText('MY TEXT', lineLeftOffset, (scale.bottom - scale.top) / 2 + scale.top);
+          context.fillText(pointItem.label, lineLeftOffset, (scale.bottom - scale.top) / 2 + scale.top);
       },
 
       afterDatasetsDraw: function (chart, easing) {
           if (chart.config.lineAtIndex) {
-              chart.config.lineAtIndex.forEach(pointIndex => this.renderVerticalLine(chart, pointIndex));
+            for(let pointCollection of chart.config.lineAtIndex) {
+              const indexes = pointCollection.indexes;
+
+              indexes.forEach((pointIndex) => {
+                const pointItem = pointCollection;
+                this.renderVerticalLine(chart, pointIndex, pointItem);
+              });
+            }
           }
       }
-      };
+    };
 
-      Chart.plugins.register(verticalLinePlugin);
+    Chart.plugins.register(verticalLinePlugin);
   }
 }

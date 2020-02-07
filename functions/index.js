@@ -20,7 +20,7 @@ const runtimeOpts = {
 };
 
 // Cron Job Schedule - How Often to trigger the function.
-const schedule = '0 17 * * *'; // Everyday at 9am server time.
+const schedule = '0 17 30 * *'; // Everyday at 9am server time.
 
 const fetchDailyData = async function() {
     console.log('Running Daily Fetch Data');
@@ -374,7 +374,17 @@ exports.symbols = functions.https.onRequest(async (req, res) => {
 exports.tenMonthMovingAverages = functions.https.onRequest(async (req, res) => {
     const method = req.method;
     const id = req.query['id'];
-    console.log('HERERE: ' + id)
+    const start = req.query['start'];
+    const end = req.query['end'];
+
+    // let startDateMoment = null;
+    // let endDateMoment = null;
+
+    // // if(start && end) {
+    // //     const startDate = moment.utc().unix(Number(startDate));
+    // //     const endDate = moment.utc().unix(Number(endDate));
+    // // } 
+    // console.log('HERERE: ' + id)
 
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'GET, PUT, POST, OPTIONS');
@@ -382,6 +392,12 @@ exports.tenMonthMovingAverages = functions.https.onRequest(async (req, res) => {
 
     switch(method) {
         case 'GET':
+            const query = {};
+
+            if(start && end) {
+                query.start: Number()
+            }
+
             const symbol = await mongoDbService.findOne({ _id: id });
             const tenMonthMovingAverages = symbol.tenMonthMovingAverages;
 
@@ -437,3 +453,5 @@ exports.latestTenMonthMovingAverage = functions.https.onRequest(async (req, res)
 // calculateTenMonthMovingAverage(753148800, 'SPY'); // 1993 / 11 / 13 (sat)
 
 console.log('DEPLOYMENT SUCCESSFUL!');
+
+1580947200

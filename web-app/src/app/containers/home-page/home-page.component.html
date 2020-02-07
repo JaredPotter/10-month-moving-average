@@ -2,6 +2,11 @@
   <div class="chart-container">
     <canvas id="myChart" width="400" height="175"></canvas>
   </div>
+  <div class="chart-options">
+    <button (click)="handleChartOptionClick('all')">All Time</button>
+    <button (click)="handleChartOptionClick('2000')">2000 (Dot-com bubble)</button>
+    <button (click)="handleChartOptionClick('2007')">2007/2008 Financial Crisis (Dot-com bubble)</button>
+  </div>
   <div>~~~~~~~~~~~~~~~~~~~~~~~>~~~~~~~~~~~~~~~~~~~~~~~>~~~~~~~~~~~~~~~~~~~~~~~>~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~>~~~~~~~~~~~~~~~~~~~~~~~>~~~~~~~~~~~~~~~~~~~~~~~>~~~~~~~~~~~~~~~~~~~~~~~</div>
   <div class="latest" *ngIf="this.latestPrice">
     <h1>LATEST 10 MONTH MOVING AVERAGE</h1>
@@ -13,7 +18,7 @@
     <h2 *ngIf="this.marketStatus === 'OUT'">Because the Price (${{ this.latestPrice.toFixed(2) }}) is <u>less</u> than the 10 Month Moving Average (${{ this.latestAverage.toFixed(2) }}) you want to be OUT OF market.</h2>
     <h3>Next Update: The First Trading Day of Next Month</h3>
   </div>
-  <h1>Are You Invested in The Market?</h1>
+  <!-- <h1>Are You Invested in The Market?</h1>
   <div class="market">
     <h3 class="hold">Hold</h3>
     <h3 class="get-out">Get Out</h3>
@@ -24,5 +29,5 @@
   <div class="not-market">
     <h3 class="get-in">Get In</h3>
     <h3 class="stay-out">Stay Out</h3>
-  </div>
+  </div> -->
 </div>
