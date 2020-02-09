@@ -18,7 +18,7 @@ const mongoDbService = {
                     reject(err);
                 }
                 else {
-                    console.log('SUCCESSFULLY CONNECTED TO DATABASE!');
+                    // console.log('SUCCESSFULLY CONNECTED TO DATABASE!');
 
                     const database = client.db(databaseName);
 
@@ -29,7 +29,7 @@ const mongoDbService = {
     },
     async insert() {
         while(!this._mongoDbClient) {
-            console.log('Attempting to connect...');
+            // console.log('Attempting to connect...');
             this._mongoDbClient = await this.connect();
         }
 
@@ -37,7 +37,7 @@ const mongoDbService = {
     },
     async find(query = {}) {
         while(!this._mongoDbClient) {
-            console.log('Attempting to connect...');
+            // console.log('Attempting to connect...');
             this._mongoDbClient = await this.connect();
         }
 
@@ -56,7 +56,7 @@ const mongoDbService = {
     },
     async findOne(query = {}) {
         while(!this._mongoDbClient) {
-            console.log('Attempting to connect...');
+            // console.log('Attempting to connect...');
             this._mongoDbClient = await this.connect();
         }
 
@@ -82,7 +82,7 @@ const mongoDbService = {
         const updatedDoc = { $set: { lastUpdated, prices, dividends, tenMonthMovingAverages } };        
 
         while(!this._mongoDbClient) {
-            console.log('Attempting to connect...');
+            // console.log('Attempting to connect...');
             this._mongoDbClient = await this.connect();
         }
 

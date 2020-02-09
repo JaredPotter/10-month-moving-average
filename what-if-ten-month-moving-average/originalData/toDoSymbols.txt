@@ -8,4 +8,4 @@ CAC - France Stock Exchange
 HSI - Hong Kong Stock Exchange
 OSPTX - Toronto Stock Exchange
 ^MXX - Mexico Stock Exchange
-KOSPI - Korea Stock Exchange
+KS200 (KOSPI 93% of the total market value of the Korea Stock Exchange) - Korea Stock Exchange
