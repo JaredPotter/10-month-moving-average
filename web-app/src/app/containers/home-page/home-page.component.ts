@@ -18,52 +18,22 @@ export class HomePageComponent implements OnInit {
   public marketStatus = "";
   public symbolName = "";
   public symbolId = "";
+  public originalAverages = [];
+  public myChart: Chart = null;
+  public threshold = 2;
 
   public chartOptions = {};
 
+  setThreshold(newValue) {
+    debugger;
+    this.threshold = newValue;
+  }
+
   ngOnInit() {
-    // var ctx = document.getElementById('myChart');
-    // debugger;
-    // const chartOptions = {
-    //   type: 'line',
-    //   data: {
-    //       labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
-    //       datasets: [{
-    //           label: 'S&P 500 Price',
-    //           data: [12, 19, 3, 5, 2, 3],
-    //           borderColor: [
-    //               '#3382EA'
-    //           ],
-    //           fill: false,
-    //       },
-    //       {
-    //         label: 'S&P 500 10 Month Moving Average',
-    //         data: [1, 3, 5, 14, 17, 12],
-    //         borderColor: '#A375F7',
-    //         fill: false,
-    //       }
-
-    //     ]
-    //   },
-    //   options: {
-    //       scales: {
-    //           yAxes: [{
-    //               ticks: {
-    //                   beginAtZero: true
-    //               }
-    //           }]
-    //       }
-    //   }
-    // };
-    // var myChart = new Chart(ctx, chartOptions);
-
-    // return;
     const symbolId = "SPY";
-
     this.symbolId = symbolId;
 
     this.fetchData(symbolId, null, null);
-
   }
 
   fetchData(symbolId: string, startDate: Moment = null, endDate: Moment = null): void {
@@ -112,6 +82,8 @@ export class HomePageComponent implements OnInit {
       .then(response => {
         const aves = response.data.averages;
 
+        this.originalAverages = aves;
+
         for (let i = 0; i < aves.length; i++) {
           const ave = aves[i];
           const label = ave.title;
@@ -140,22 +112,87 @@ export class HomePageComponent implements OnInit {
   handleChartOptionClick(action: string): void {
     let startDate = null
     let endDate = null;
+    let labels = [];
+    let prices = [];
+    let averages = [];
+    const originalAveragesClone = [...this.originalAverages];
 
     switch(action) {
       case 'all':
-        this.fetchData(this.symbolId, null, null);
+        for (let i = 0; i < originalAveragesClone.length; i++) {
+          const ave = originalAveragesClone[i];
+          const label = ave.title;
+          const price = ave.closingDayPrice;
+          const average = ave.average;
+
+          labels.push(label);
+          prices.push(price);
+          averages.push(average);
+        }
         break;
       case '2000':
-        startDate = moment.utc('04/03/2000');
-        endDate = moment.utc('06/01/2007');
-        debugger;
-        this.fetchData(this.symbolId, startDate, endDate);
+        startDate = moment.utc('04/03/2000').startOf('day').unix();
+        endDate = moment.utc('06/01/2007').startOf('day').unix();
+
+        for (let i = 0; i < originalAveragesClone.length; i++) {
+          const ave = originalAveragesClone[i];
+          const label = ave.title;
+          const price = ave.closingDayPrice;
+          const average = ave.average;
+          const timestamp = Number(ave.lastUpdated);
+
+          if(timestamp >= startDate && timestamp <= endDate) {
+            labels.push(label);
+            prices.push(price);
+            averages.push(average);
+          }
+        }
         break;
       case '2007':
-        startDate = moment();
-        endDate = moment();
+        startDate = moment.utc('07/02/2007').startOf('day').unix();
+        endDate = moment.utc('03/01/2013').startOf('day').unix();
+
+        for (let i = 0; i < originalAveragesClone.length; i++) {
+          const ave = originalAveragesClone[i];
+          const label = ave.title;
+          const price = ave.closingDayPrice;
+          const average = ave.average;
+          const timestamp = Number(ave.lastUpdated);
+
+          if(timestamp >= startDate && timestamp <= endDate) {
+            labels.push(label);
+            prices.push(price);
+            averages.push(average);
+          }
+        }
+        break;
+      case '2015':
+        startDate = moment.utc('07/01/2015').startOf('day').unix();
+        endDate = moment.utc('02/03/2020').startOf('day').unix();
+
+        for (let i = 0; i < originalAveragesClone.length; i++) {
+          const ave = originalAveragesClone[i];
+          const label = ave.title;
+          const price = ave.closingDayPrice;
+          const average = ave.average;
+          const timestamp = Number(ave.lastUpdated);
+
+          if(timestamp >= startDate && timestamp <= endDate) {
+            labels.push(label);
+            prices.push(price);
+            averages.push(average);
+          }
+        }
         break;
     }
+
+    const data = {
+      labels,
+      prices,
+      averages
+    };
+
+    this.renderChart(data);
   }
 
   renderChart(data) {
@@ -164,7 +201,6 @@ export class HomePageComponent implements OnInit {
     const averages = data.averages;
     var ctx = document.getElementById("myChart");
     this.setupChartPlugs();
-
 
     // Calculate BUY and SELL indexes
     let isInMarket = false;
@@ -178,20 +214,30 @@ export class HomePageComponent implements OnInit {
     for(let i = 0; i < prices.length; i++) {
       const price = prices[i];
       const average = averages[i];
-// debugger;
+
       if(price >= average && isInMarket) {
-        // debugger;
         // Do nothing. Remain in the market.
       }
       else if(average >= price && isInMarket) {
-        // SELL
-        isInMarket = false;
-        sellIndexes.push(i);
+        const percentDifference = 1 - (price / average);
+
+        if(percentDifference > this.threshold / 100) {
+          // SELL
+          isInMarket = false;
+          sellIndexes.push(i);
+          // debugger;
+        }
       }
       else if(price >= average && !isInMarket) {
-        // BUY
-        isInMarket = true;
-        buyIndexes.push(i);
+        const percentDifference = 1 - (average / price);
+
+        if(percentDifference > this.threshold / 100) {
+          // BUY
+          isInMarket = true;
+          buyIndexes.push(i);
+          // debugger;
+        }
+
       }
       else if(averages >= price && !isInMarket) {
         // Do nothing. Remain out of the market.
@@ -265,7 +311,12 @@ export class HomePageComponent implements OnInit {
         },
       ]
     };
-    var myChart = new Chart(ctx, chartOptions);
+
+    if(this.myChart) {
+      this.myChart.destroy();
+    }
+
+    this.myChart = new Chart(ctx, chartOptions);
   }
 
   setupChartPlugs() {

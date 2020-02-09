@@ -4,8 +4,19 @@
   </div>
   <div class="chart-options">
     <button (click)="handleChartOptionClick('all')">All Time</button>
-    <button (click)="handleChartOptionClick('2000')">2000 (Dot-com bubble)</button>
-    <button (click)="handleChartOptionClick('2007')">2007/2008 Financial Crisis (Dot-com bubble)</button>
+    <button (click)="handleChartOptionClick('2000')">2000 Dot-Com Bubble</button>
+    <button (click)="handleChartOptionClick('2007')">2007/2008 Financial Crisis</button>
+    <button (click)="handleChartOptionClick('2015')">July 2015 - Now</button>
+    <label>Threshold {{ this.threshold }}%
+      <!-- <select ngModel="threshold" (change)="setThreshold($event.target.value)">
+        <option value="0">0%</option>
+        <option value="1">1%</option>
+        <option value="2">2%</option>
+        <option value="3">3%</option>
+        <option value="4" selected>4%</option>
+        <option value="5">5%</option>
+      </select> -->
+    </label>
   </div>
   <div>~~~~~~~~~~~~~~~~~~~~~~~>~~~~~~~~~~~~~~~~~~~~~~~>~~~~~~~~~~~~~~~~~~~~~~~>~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~>~~~~~~~~~~~~~~~~~~~~~~~>~~~~~~~~~~~~~~~~~~~~~~~>~~~~~~~~~~~~~~~~~~~~~~~</div>
   <div class="latest" *ngIf="this.latestPrice">
