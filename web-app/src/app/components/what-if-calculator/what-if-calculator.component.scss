@@ -1,0 +1,10 @@
+.what-if-calculator-container {
+  form {
+    display: flex;
+    flex-direction: column;
+  }
+
+  label, .label, input, select, option, button {
+    font-size: 2rem;
+  }
+}

@@ -1,0 +1,38 @@
+<div class="what-if-calculator-container">
+  <form [formGroup]="whatIfForm" (submit)="handleWhatIfCalculatorSubmit($event)">
+    <label class="label">
+      Current Balance ($):
+      <input type="number" min="0" formControlName="currentBalance">
+    </label>
+    <label class="label">
+      Start Date:
+      <input type="date" formControlName="startDateTime">
+    </label>
+    <label class="label">
+      End Date:
+      <input type="date" formControlName="endDateTime">
+    </label>
+    <label class="label">
+      Symbol:
+      <select formControlName="symbol">
+        <option value="SPY">SPY</option>
+      </select>
+    </label>
+    <label class="label">
+      Years Worked:
+      <input type="number" min="0" formControlName="yearsWorked">
+    </label>
+    <div class="label">
+      Is Your Money Currently:
+      <div>
+        In The Market
+        <input type="radio" value="true" formControlName="moneyIsInMarket">
+      </div>
+      <div>
+        Out Of The Market
+        <input type="radio" value="false" formControlName="moneyIsInMarket">
+      </div>
+    </div>
+    <button>Submit</button>
+  </form>
+</div>
