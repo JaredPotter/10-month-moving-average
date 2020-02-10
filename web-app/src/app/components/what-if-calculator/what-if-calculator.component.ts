@@ -3,6 +3,8 @@ import { FormGroup, FormControl } from '@angular/forms';
 import * as moment from 'moment';
 import axios from 'axios';
 
+import taxBrackets from '../../../capitalGainsTax';
+
 @Component({
   selector: 'app-what-if-calculator',
   templateUrl: './what-if-calculator.component.html',
@@ -11,6 +13,8 @@ import axios from 'axios';
 export class WhatIfCalculatorComponent implements OnInit {
 
   constructor() { }
+
+  years = [];
 
   whatIfForm = new FormGroup({
     currentBalance: new FormControl(200000),
@@ -40,7 +44,37 @@ export class WhatIfCalculatorComponent implements OnInit {
     debugger;
   }
 
+  getBrackets(year: number) {
+    const brackets = [];
+    const yearBracket = taxBrackets[year];
+
+    if(yearBracket) {
+      for(let i = 0; i < yearBracket.brackets.length; i++) {
+        const bracket = yearBracket.brackets[i];
+        const rangeLabel = `$${bracket.minBracketValue} - $${bracket.maxBracketValue}`;
+
+        const b = {
+          year,
+          index: i,
+          rangeLabel,
+        };
+
+        brackets.push(b);
+      }
+    }
+
+    return brackets;
+  }
+
   ngOnInit() {
+    const start = moment(this.whatIfForm.value.startDateTime, 'YYYY-MM-DD');
+    let current = moment(start);
+    const end = moment(this.whatIfForm.value.endDateTime, 'YYYY-MM-DD');
+
+    while(current.isSameOrBefore(end, 'year')) {
+      this.years.push(current.year());
+      current.add(1, 'year');
+    }
   }
 }
 

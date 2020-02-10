@@ -12,6 +12,20 @@
       End Date:
       <input type="date" formControlName="endDateTime">
     </label>
+    <div>
+      <table>
+        <tr>
+          <th *ngFor="let year of years" class="label">{{ year }}</th>
+        </tr>
+        <tr>
+          <td *ngFor="let year of years">
+            <select [formControlName]="year + 'TaxBrackets'">
+              <option *ngFor="let bracket of getBrackets(year)" [value]="bracket.index">{{ bracket.rangeLabel }}</option>
+            </select>
+          </td>
+        </tr>
+      </table>
+    </div>
     <label class="label">
       Symbol:
       <select formControlName="symbol">
