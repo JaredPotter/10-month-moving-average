@@ -84,7 +84,7 @@ const fetchDailyData = async function() {
             }
     
             newData.tenMonthMovingAverages = {
-                lastUpdated: nowDay + '',
+                lastUpdated: nowDay,
                 averages: newData.tenMonthMovingAverages.averages.concat(averages),
             };
         }
@@ -107,9 +107,9 @@ async function fetchData(symbol, lastUpdated, currentData) {
 
     // const nowUnix = 946684800;
 
-// Example URL
-// https://query1.finance.yahoo.com/v8/finance/chart/VOO?symbol=VOO&period1=729129600&period2=1579736788&interval=1d&events=div;
-// https://query1.finance.yahoo.com/v8/finance/chart/VFINX?symbol=VFINX&period1=729129600&period2=1579736788&interval=1d&events=div;    
+    // Example URL
+    // https://query1.finance.yahoo.com/v8/finance/chart/VOO?symbol=VOO&period1=729129600&period2=1579736788&interval=1d&events=div;
+    // https://query1.finance.yahoo.com/v8/finance/chart/VFINX?symbol=VFINX&period1=729129600&period2=1579736788&interval=1d&events=div;    
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?symbol=${symbol}&period1=${lastUpdated}&period2=${nowUnix}&interval=1d&events=div`;
     const response = await axios.get(url);
 
@@ -193,7 +193,7 @@ async function transformData(data) {
 
     for(let i = 0; i < timestamps.length; i++) {
         const timestamp = timestamps[i];
-        const time = moment.unix(timestamp).utc().startOf('day').unix() + '';
+        const time = moment.unix(timestamp).utc().startOf('day').unix();
         const closePrice = closePrices[i];            
         const price = {
             timestamp: time,
@@ -222,12 +222,12 @@ async function transformData(data) {
 
     // debugger;
 
-    const nowUnix = moment().utc().startOf('day').unix() + '';
+    const nowUnix = moment().utc().startOf('day').unix();
 
     const transformedData = {
         prices: prices,
         dividends: newDividends,
-        lastUpdated: nowUnix + '',
+        lastUpdated: nowUnix,
     };
 
     // debugger;
@@ -280,7 +280,7 @@ async function calculateTenMonthMovingAverage(timestamp, prices) {
     const tenMonthMovingAverage = {
         average: average,
         closingDayPrice: averageArray[0].price,
-        lastUpdated: tradingDayMoment.unix() + '',
+        lastUpdated: tradingDayMoment.unix(),
         title: tradingDayMoment.utc().format('MMM D, YYYY'),
     };
 
