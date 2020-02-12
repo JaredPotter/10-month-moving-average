@@ -266,4 +266,4 @@ function getLastTradingDayOfMonth(prices, timestamp) {
     // TODO: implement
 };
 
-export default dailyFetchData;
+module.exports = dailyFetchData;

@@ -31,4 +31,4 @@ async function getSymbolName(symbol) {
     return name;
 }
 
-export default { getSymbolName }
+module.exports = { getSymbolName };
