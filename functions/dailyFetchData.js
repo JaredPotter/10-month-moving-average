@@ -1,4 +1,6 @@
-
+const mongoDbService = require('./mongoDbService');
+const moment = require('moment');
+const axios = require('axios');
 
 const dailyFetchData = async function() {
     console.log('Running Daily Fetch Data');
@@ -267,3 +269,7 @@ function getLastTradingDayOfMonth(prices, timestamp) {
 };
 
 module.exports = dailyFetchData;
+
+
+// DEV
+// dailyFetchData();
