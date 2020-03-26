@@ -1,9 +1,9 @@
 html {
-  font-family: sans-serif;
+  font-family: "lato", sans-serif;
   -ms-text-size-adjust: 100%;
   -webkit-text-size-adjust: 100%;
 }
-body {
+/* body {
   margin: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -619,4 +619,4 @@ pre tt:after {
   html {
     font-size: 100%;
   }
-}
+} */

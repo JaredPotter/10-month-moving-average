@@ -1,34 +1,28 @@
 import { Link } from "gatsby"
 import PropTypes from "prop-types"
 import React from "react"
+import logo from "../images/logo-simple-investing.svg"
+import "../pages/custom.scss"
 
 const Header = ({ siteTitle }) => (
-  <header
-    style={{
-      background: `rebeccapurple`,
-      marginBottom: `1.45rem`,
-    }}
-  >
-    <div
-      style={{
-        margin: `0 auto`,
-        maxWidth: 960,
-        padding: `1.45rem 1.0875rem`,
-      }}
-    >
-      <h1 style={{ margin: 0 }}>
-        <Link
-          to="/"
-          style={{
-            color: `white`,
-            textDecoration: `none`,
-          }}
-        >
-          {siteTitle}
-        </Link>
-      </h1>
+  <nav className="navbar" role="navigation" aria-label="main navigation">
+    <div className="navbar-brand">
+      <Link className="navbar-item" to="/">
+        <img src={logo} width="112" height="28" />
+      </Link>
     </div>
-  </header>
+    <div id="signup" className="navbar-menu">
+      <div className="navbar-end">
+        <div className="navbar-item">
+          <div className="buttons">
+            <a href="#join" className="button is-primary">
+              <strong>GET STARTED NOW</strong>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
 )
 
 Header.propTypes = {

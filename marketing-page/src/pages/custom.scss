@@ -1,0 +1,21 @@
+@charset "utf-8";
+// If need, change your variables before importing Bulma
+$navbar-breakpoint: 0;
+$footer-background-color: #222426;
+
+#hero {
+  background-image: url("../images/investing.jpg");
+  background-size: cover;
+}
+
+#join {
+  input {
+    width: 300px;
+  }
+}
+
+footer p {
+  color: #afbfbf;
+}
+
+@import "~bulma/bulma.sass";
