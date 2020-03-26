@@ -7,7 +7,7 @@ import "./custom.scss"
 const IndexPage = () => (
   <Layout>
     <SEO title="Home" />
-    <section id="hero" className="hero is-primary is-large">
+    <section id="hero" className="hero is-black is-large">
       <div className="hero-body">
         <div className="container has-text-centered ">
           <h1 className="title is-1">Our Vision</h1>
@@ -24,7 +24,7 @@ const IndexPage = () => (
 
     <section className="section is-large">
       <div className="container has-text-centered">
-        <h1 className="title is-1">Comparison Table</h1>
+        <h1 className="title is-1">We Aren't Like the Other Guys!</h1>
         <table className="table table is-striped table is-fullwidth ">
           <thead>
             <tr>
