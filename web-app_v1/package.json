@@ -20,7 +20,7 @@
     "@angular/platform-browser-dynamic": "~8.2.14",
     "@angular/router": "~8.2.14",
     "axios": "^0.19.2",
-    "chart.js": "^2.9.3",
+    "chart.js": "^2.9.4",
     "moment": "^2.24.0",
     "prettier": "^1.19.1",
     "rxjs": "~6.4.0",
