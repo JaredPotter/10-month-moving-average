@@ -18,7 +18,7 @@
     "dotenv": "^8.2.0",
     "firebase-admin": "^8.9.1",
     "firebase-functions": "^3.3.0",
-    "moment": "^2.24.0",
+    "moment": "^2.29.4",
     "mongodb": "^3.5.2"
   },
   "devDependencies": {
